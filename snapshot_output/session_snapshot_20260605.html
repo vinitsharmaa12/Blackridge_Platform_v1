@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Session Snapshot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .snapshot-table-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+        }
+
+        th:nth-child(1) {
+            width: 35%;
+        }
+
+        th:nth-child(2),
+        th:nth-child(3),
+        th:nth-child(4) {
+            width: 21.67%;
+            text-align: center;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        tbody tr {
+            transition: background-color 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9ff;
+        }
+
+        /* Metric categories */
+        .metric-category {
+            background-color: #f5f5f5;
+            font-weight: 700;
+            color: #333;
+            padding: 18px 20px !important;
+        }
+
+        .metric-row {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .metric-row td:first-child {
+            padding-left: 40px;
+            color: #666;
+        }
+
+        /* Data cells */
+        td:not(:first-child) {
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Timestamp styling */
+        .timestamp {
+            font-size: 0.9rem;
+            color: #999;
+            display: block;
+            margin-top: 4px;
+        }
+
+        /* Data availability indicator */
+        .no-data {
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Strike & OI pairs */
+        .strike-oi {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .strike {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1rem;
+        }
+
+        .oi-value {
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        /* PCR styling */
+        .pcr-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        /* Volume styling */
+        .volume-value {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer a:hover {
+            opacity: 0.8;
+        }
+
+        /* Comparison note */
+        .comparison-note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #856404;
+            font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 12px 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+
+            th:nth-child(1) {
+                width: 30%;
+            }
+
+            th:nth-child(2),
+            th:nth-child(3),
+            th:nth-child(4) {
+                width: 23.33%;
+            }
+
+            .metric-row td:first-child {
+                padding-left: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Market Session Snapshot</h1>
+        <p>Nifty Options Analysis - Three Timeframe View</p>
+    </div>
+
+    <!-- Comparison Note -->
+    <div class="comparison-note">
+        💡 This table captures market data at three key sessions: Morning Open (09:21), Midday (12:30), and Evening (15:00). Compare the metrics across sessions to identify market trends and changes in positioning.
+    </div>
+
+    <!-- Session Snapshot Table -->
+    <div class="snapshot-table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Morning<br><span style="font-size: 0.85rem; font-weight: 400;">09:21</span></th>
+                    <th>Midday<br><span style="font-size: 0.85rem; font-weight: 400;">12:30</span></th>
+                    <th>Evening<br><span style="font-size: 0.85rem; font-weight: 400;">15:00</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Underlying Price -->
+                <tr class="metric-category">
+                    <td colspan="4">📈 UNDERLYING PRICE</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Nifty 50 Price</td>
+                    <td>
+                        <span id="morning_underlying">23.5K</span>
+                        <span class="timestamp"><span id="morning_timestamp">09:21:17</span></span>
+                    </td>
+                    <td>
+                        <span id="midday_underlying">23.5K</span>
+                        <span class="timestamp"><span id="midday_timestamp">12:30:30</span></span>
+                    </td>
+                    <td>
+                        <span id="evening_underlying">23.5K</span>
+                        <span class="timestamp"><span id="evening_timestamp">15:00:45</span></span>
+                    </td>
+                </tr>
+
+                <!-- Top 3 Calls (CE) -->
+                <tr class="metric-category">
+                    <td colspan="4">📞 TOP 3 CALL OPTIONS (CE) BY OPEN INTEREST</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 1</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_ce1_strike">24000</span>
+                            <span class="oi-value">OI: <span id="morning_ce1_oi">179.2K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_ce1_strike">23500</span>
+                            <span class="oi-value">OI: <span id="midday_ce1_oi">250.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_ce1_strike">23500</span>
+                            <span class="oi-value">OI: <span id="evening_ce1_oi">220.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 2</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_ce2_strike">23500</span>
+                            <span class="oi-value">OI: <span id="morning_ce2_oi">106.9K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_ce2_strike">23800</span>
+                            <span class="oi-value">OI: <span id="midday_ce2_oi">180.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_ce2_strike">23700</span>
+                            <span class="oi-value">OI: <span id="evening_ce2_oi">190.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 3</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_ce3_strike">23800</span>
+                            <span class="oi-value">OI: <span id="morning_ce3_oi">86.7K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_ce3_strike">24000</span>
+                            <span class="oi-value">OI: <span id="midday_ce3_oi">150.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_ce3_strike">23800</span>
+                            <span class="oi-value">OI: <span id="evening_ce3_oi">160.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Top 3 Puts (PE) -->
+                <tr class="metric-category">
+                    <td colspan="4">📱 TOP 3 PUT OPTIONS (PE) BY OPEN INTEREST</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 1</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_pe1_strike">23000</span>
+                            <span class="oi-value">OI: <span id="morning_pe1_oi">123.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_pe1_strike">23000</span>
+                            <span class="oi-value">OI: <span id="midday_pe1_oi">200.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_pe1_strike">23000</span>
+                            <span class="oi-value">OI: <span id="evening_pe1_oi">210.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 2</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_pe2_strike">23300</span>
+                            <span class="oi-value">OI: <span id="morning_pe2_oi">117.7K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_pe2_strike">23300</span>
+                            <span class="oi-value">OI: <span id="midday_pe2_oi">180.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_pe2_strike">23200</span>
+                            <span class="oi-value">OI: <span id="evening_pe2_oi">190.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Rank 3</td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="morning_pe3_strike">23400</span>
+                            <span class="oi-value">OI: <span id="morning_pe3_oi">83.4K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="midday_pe3_strike">23400</span>
+                            <span class="oi-value">OI: <span id="midday_pe3_oi">150.0K</span></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="strike-oi">
+                            <span class="strike" id="evening_pe3_strike">23300</span>
+                            <span class="oi-value">OI: <span id="evening_pe3_oi">170.0K</span></span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- PCR Ratio -->
+                <tr class="metric-category">
+                    <td colspan="4">⚖️ PUT-CALL RATIO (PCR)</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Put-Call Ratio</td>
+                    <td>
+                        <span class="pcr-value" id="morning_pcr">0.96</span>
+                    </td>
+                    <td>
+                        <span class="pcr-value" id="midday_pcr">1.02</span>
+                    </td>
+                    <td>
+                        <span class="pcr-value" id="evening_pcr">0.98</span>
+                    </td>
+                </tr>
+
+                <!-- Overall Metrics -->
+                <tr class="metric-category">
+                    <td colspan="4">🎯 OVERALL CALL OPTION (CE) METRICS</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Total Open Interest</td>
+                    <td>
+                        <span class="volume-value" id="morning_ce_oi">2.09M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="midday_ce_oi">3.50M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="evening_ce_oi">4.00M</span>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Total Traded Volume</td>
+                    <td>
+                        <span class="volume-value" id="morning_ce_volume">25.06M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="midday_ce_volume">50.00M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="evening_ce_volume">70.00M</span>
+                    </td>
+                </tr>
+
+                <tr class="metric-category">
+                    <td colspan="4">🎯 OVERALL PUT OPTION (PE) METRICS</td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Total Open Interest</td>
+                    <td>
+                        <span class="volume-value" id="morning_pe_oi">2.01M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="midday_pe_oi">3.60M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="evening_pe_oi">3.90M</span>
+                    </td>
+                </tr>
+                <tr class="metric-row">
+                    <td>Total Traded Volume</td>
+                    <td>
+                        <span class="volume-value" id="morning_pe_volume">23.88M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="midday_pe_volume">52.00M</span>
+                    </td>
+                    <td>
+                        <span class="volume-value" id="evening_pe_volume">68.00M</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>📅 Generated on 2026-06-09 10:23:45 | Data updated in real-time during market hours</p>
+        <p style="margin-top: 10px; opacity: 0.8;">💡 Tip: Use these snapshots to track market positioning changes across sessions and identify support/resistance levels</p>
+    </div>
+</div>
+
+<script>
+// Auto-refresh logic: attempt to fetch sibling JSON file and update DOM every 30 seconds
+(function(){
+    function id(v){ return document.getElementById(v); }
+
+    function safeSet(idName, value){
+        var el = id(idName);
+        if(!el) return;
+        if(value === null || value === undefined) el.textContent = 'N/A';
+        else el.textContent = value;
+    }
+
+    function isoTimeToClock(ts){
+        try{ return ts.split('T').pop().split('.')[0]; }catch(e){return ts||''}
+    }
+
+    function jsonNameFromHtml(){
+        var path = window.location.pathname;
+        var parts = path.split('/');
+        var html = parts.pop() || parts.pop();
+        return html.replace(/\.html$/,'') + '.json';
+    }
+
+    var jsonFile = jsonNameFromHtml();
+
+    async function fetchAndUpdate(){
+        try{
+            const res = await fetch(jsonFile, {cache: 'no-store'});
+            if(!res.ok) throw new Error('fetch failed');
+            const data = await res.json();
+
+            // morning
+            safeSet('morning_underlying', data.morning.underlyingValue || 'N/A');
+            safeSet('morning_timestamp', isoTimeToClock(data.morning.timestamp || ''));
+            safeSet('morning_ce1_strike', data.morning.top1ce_strike || 'N/A');
+            safeSet('morning_ce1_oi', data.morning.top1ce_oi || 'N/A');
+            safeSet('morning_ce2_strike', data.morning.top2ce_strike || 'N/A');
+            safeSet('morning_ce2_oi', data.morning.top2ce_oi || 'N/A');
+            safeSet('morning_ce3_strike', data.morning.top3ce_strike || 'N/A');
+            safeSet('morning_ce3_oi', data.morning.top3ce_oi || 'N/A');
+            safeSet('morning_pe1_strike', data.morning.top1pe_strike || 'N/A');
+            safeSet('morning_pe1_oi', data.morning.top1pe_oi || 'N/A');
+            safeSet('morning_pe2_strike', data.morning.top2pe_strike || 'N/A');
+            safeSet('morning_pe2_oi', data.morning.top2pe_oi || 'N/A');
+            safeSet('morning_pe3_strike', data.morning.top3pe_strike || 'N/A');
+            safeSet('morning_pe3_oi', data.morning.top3pe_oi || 'N/A');
+            safeSet('morning_pcr', data.morning.pcr || 'N/A');
+            safeSet('morning_ce_oi', data.morning.overall_ce_oi || 'N/A');
+            safeSet('morning_ce_volume', data.morning.overall_ce_volume || 'N/A');
+            safeSet('morning_pe_oi', data.morning.overall_pe_oi || 'N/A');
+            safeSet('morning_pe_volume', data.morning.overall_pe_volume || 'N/A');
+
+            // midday
+            safeSet('midday_underlying', data.midday.underlyingValue || 'N/A');
+            safeSet('midday_timestamp', isoTimeToClock(data.midday.timestamp || ''));
+            safeSet('midday_ce1_strike', data.midday.top1ce_strike || 'N/A');
+            safeSet('midday_ce1_oi', data.midday.top1ce_oi || 'N/A');
+            safeSet('midday_ce2_strike', data.midday.top2ce_strike || 'N/A');
+            safeSet('midday_ce2_oi', data.midday.top2ce_oi || 'N/A');
+            safeSet('midday_ce3_strike', data.midday.top3ce_strike || 'N/A');
+            safeSet('midday_ce3_oi', data.midday.top3ce_oi || 'N/A');
+            safeSet('midday_pe1_strike', data.midday.top1pe_strike || 'N/A');
+            safeSet('midday_pe1_oi', data.midday.top1pe_oi || 'N/A');
+            safeSet('midday_pe2_strike', data.midday.top2pe_strike || 'N/A');
+            safeSet('midday_pe2_oi', data.midday.top2pe_oi || 'N/A');
+            safeSet('midday_pe3_strike', data.midday.top3pe_strike || 'N/A');
+            safeSet('midday_pe3_oi', data.midday.top3pe_oi || 'N/A');
+            safeSet('midday_pcr', data.midday.pcr || 'N/A');
+            safeSet('midday_ce_oi', data.midday.overall_ce_oi || 'N/A');
+            safeSet('midday_ce_volume', data.midday.overall_ce_volume || 'N/A');
+            safeSet('midday_pe_oi', data.midday.overall_pe_oi || 'N/A');
+            safeSet('midday_pe_volume', data.midday.overall_pe_volume || 'N/A');
+
+            // evening
+            safeSet('evening_underlying', data.evening.underlyingValue || 'N/A');
+            safeSet('evening_timestamp', isoTimeToClock(data.evening.timestamp || ''));
+            safeSet('evening_ce1_strike', data.evening.top1ce_strike || 'N/A');
+            safeSet('evening_ce1_oi', data.evening.top1ce_oi || 'N/A');
+            safeSet('evening_ce2_strike', data.evening.top2ce_strike || 'N/A');
+            safeSet('evening_ce2_oi', data.evening.top2ce_oi || 'N/A');
+            safeSet('evening_ce3_strike', data.evening.top3ce_strike || 'N/A');
+            safeSet('evening_ce3_oi', data.evening.top3ce_oi || 'N/A');
+            safeSet('evening_pe1_strike', data.evening.top1pe_strike || 'N/A');
+            safeSet('evening_pe1_oi', data.evening.top1pe_oi || 'N/A');
+            safeSet('evening_pe2_strike', data.evening.top2pe_strike || 'N/A');
+            safeSet('evening_pe2_oi', data.evening.top2pe_oi || 'N/A');
+            safeSet('evening_pe3_strike', data.evening.top3pe_strike || 'N/A');
+            safeSet('evening_pe3_oi', data.evening.top3pe_oi || 'N/A');
+            safeSet('evening_pcr', data.evening.pcr || 'N/A');
+            safeSet('evening_ce_oi', data.evening.overall_ce_oi || 'N/A');
+            safeSet('evening_ce_volume', data.evening.overall_ce_volume || 'N/A');
+            safeSet('evening_pe_oi', data.evening.overall_pe_oi || 'N/A');
+            safeSet('evening_pe_volume', data.evening.overall_pe_volume || 'N/A');
+
+        }catch(err){
+            // likely fetch blocked by browser for file://; ignore silently
+            console.debug('session snapshot fetch error', err);
+        }
+    }
+
+    // initial attempt + periodic updates
+    fetchAndUpdate();
+    setInterval(fetchAndUpdate, 30000);
+})();
+</script>
+
+</body>
+</html>
