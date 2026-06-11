@@ -1,0 +1,20 @@
+---
+description: FastAPI backend conventions (PRD 002)
+globs: apps/api/**
+alwaysApply: false
+---
+
+# Backend API (PRD 002)
+
+- FastAPI, read-focused. Async connection pool; **read queries only** (workers own writes).
+- **Auth:** verify the Supabase JWT on every data endpoint; 401 if missing/invalid. Personal
+  endpoints (watchlist, personal insights) scope to `auth.uid()`.
+- **Never expose the service-role key** to clients or use it for user requests — least-privilege
+  role only. CORS limited to the web origin.
+- Typed **Pydantic** response models; keep field names identical to the DB/`MetricsRow`
+  vocabulary so frontend + agent share one contract. Keep `/docs` (OpenAPI) accurate.
+- Validate time params; enforce sane defaults + max ranges + row caps to protect the DB.
+  Use the existing indexes (`idx_metrics_instrument_time`, etc.).
+- Unknown symbol → 404; empty range → empty list (not error).
+- WebSocket `/ws/instruments/{symbol}` emits on new metrics (Postgres LISTEN/NOTIFY preferred);
+  auth the socket; clean up listeners on disconnect.

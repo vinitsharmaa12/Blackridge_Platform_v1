@@ -1,0 +1,23 @@
+---
+description: Test-driven development and the Prove-It bug-fix pattern. Apply when implementing logic, fixing a bug, or changing behavior.
+alwaysApply: false
+---
+
+# Test-Driven Development
+
+Adapted from https://github.com/addyosmani/agent-skills (test-driven-development).
+
+Write a failing test before the code that makes it pass. Tests are proof — "seems right" is
+not done.
+
+**Cycle:** RED (write a test that fails) → GREEN (minimum code to pass) → REFACTOR (clean up,
+tests stay green). Run tests after each step.
+
+**Prove-It pattern (bug fixes):** don't start by fixing. First write a test that reproduces the
+bug and fails, then implement the fix until it passes, then run the full suite.
+
+**In this repo:**
+- Use `pytest`; test `core/` logic against real `nifty_data/` fixtures (incl. empty `{}` files).
+- Cover happy path + at least one edge case per unit.
+- Pure-logic tests need no DB; mock `core.db` or use a throwaway DB for write paths.
+- Skip TDD only for pure config/docs/static changes with no behavioral impact.

@@ -1,0 +1,22 @@
+---
+description: Performance optimization practices. Apply when writing DB queries, API endpoints, charts, or data processing.
+alwaysApply: false
+---
+
+# Performance
+
+Adapted from https://github.com/addyosmani/agent-skills (performance-optimization); see the
+upstream skill for depth.
+
+- **Measure before optimizing.** Don't guess hot paths; profile or reason from real data volume
+  (~9M rows/yr per instrument at 1-min cadence).
+- **DB:** bound every query (time window + row cap); use existing indexes
+  (`idx_*_instrument_time`, BRIN on `option_snapshots.time`); avoid N+1; prefer the `metrics`
+  rollup over re-aggregating raw snapshots; paginate chains.
+- **API:** async I/O; connection pooling; don't serialize huge payloads — let the client request
+  ranges. Consider the `metrics_5m` rollup (PRD 002/005) for long charts.
+- **Frontend:** lazy-load charts; downsample series for long ranges; virtualize long tables;
+  cache with TanStack Query; avoid re-fetching on every render.
+- **Ingestion/insights:** fail soft, bound retries; cap LLM tool-calls/tokens; cache the static
+  system prompt (Anthropic prompt caching).
+- Simplicity beats premature micro-optimization — keep it readable unless a measurement says otherwise.

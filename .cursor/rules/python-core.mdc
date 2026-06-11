@@ -1,0 +1,23 @@
+---
+description: Conventions for the pure core/ package and metrics.py
+globs: core/**,metrics.py
+alwaysApply: false
+---
+
+# core/ + metrics.py — pure logic layer
+
+These modules are the validated reuse base. Treat them as a library.
+
+- **Pure functions, no I/O** in `core/normalize.py`, `core/enrich.py`, and `metrics.py`
+  (DB/HTTP belong in `core/db.py`, `core/sources/`, and workers).
+- **Full type hints** on every function; prefer dataclasses (`Snapshot`, `StrikeRow`,
+  `MetricsRow`) over loose dicts. `MetricsRow.as_dict()` must keep keys identical to the
+  `metrics` table columns.
+- **Reuse `metrics.py`** for COG/PCR/sentiment/structure; do not reimplement them in `enrich`.
+- `compute_metrics(snap, prev=...)` — `prev` is the previous snapshot; required for
+  `cog_shift`/`buildup`. Keep single-snapshot fields working when `prev is None`.
+- Numeric parsing goes through the existing `_num`/`_int` helpers; handle empty/`""`/None.
+- Any new metric: add it to `enrich.py`, the `MetricsRow` dataclass, AND the `metrics` table
+  (a `db/migrations/` migration) — keep the three in sync.
+- Unit-test new logic with `pytest` (happy path + one edge case). Validate against real files
+  via `python -m scripts.process_json`.

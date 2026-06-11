@@ -1,0 +1,53 @@
+# =============================================================================
+# Blackridge Platform — Python dependencies
+# Python 3.13 (3.11+ required)
+# Install:  pip install -r requirements.txt
+# =============================================================================
+
+# ----------------------------------------------------------------------------
+# [1] ACTIVE — ingestion worker + core scripts
+# ----------------------------------------------------------------------------
+requests==2.32.3              # NSE option-chain fetch (sync worker)
+pydantic==2.10.4              # settings models
+pydantic-settings==2.7.1      # 12-factor config from env vars
+psycopg[binary,pool]==3.2.3   # Postgres driver + async pool (Supabase)
+apscheduler==3.11.0           # ingestion scheduler
+tenacity==9.0.0               # retry/backoff for flaky NSE endpoints
+
+# --- Dev / quality (ingestion) ---------------------------------------------
+pytest==8.3.4
+ruff==0.8.4
+
+# ----------------------------------------------------------------------------
+# [2] PLATFORM TARGET — uncomment as you build out the platform (see ARCHITECTURE.md)
+# ----------------------------------------------------------------------------
+
+# --- API layer (PRD 002) ----------------------------------------------------
+fastapi==0.115.6              # REST + WebSocket API for the Next.js frontend
+uvicorn[standard]==0.34.0     # ASGI server
+httpx==0.28.1                 # TestClient + JWKS fetch
+
+# --- Database / time-series (optional later) -------------------------------
+# sqlalchemy==2.0.36          # ORM / query builder over Postgres
+# alembic==1.14.0             # schema migrations
+# asyncpg==0.30.0             # async Postgres driver (optional alt)
+
+# --- Ingestion / scheduling (scale-out) ------------------------------------
+# arq==0.26.3                 # Redis-backed async job queue
+# redis==5.2.1                # queue + caching + websocket fan-out
+
+# --- Data / metrics --------------------------------------------------------
+pandas==2.2.3               # vectorized metric computation
+numpy==2.2.1                # numerics under pandas
+polars==1.17.1              # (optional) faster columnar alt to pandas
+
+# --- Agentic insights ------------------------------------------------------
+anthropic==0.42.0           # Claude API for narrative insight generation
+agno==1.1.1                 # agent framework (you already have its MCP/skill)
+
+# --- Auth (if not using Supabase/Clerk hosted auth) ------------------------
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# --- Dev / quality (later) -------------------------------------------------
+# mypy==1.14.0

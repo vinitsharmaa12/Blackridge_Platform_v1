@@ -1,0 +1,26 @@
+---
+description: Review behavior for the Reviewer mode. Apply when reviewing a diff, PR, or another agent's output before merge.
+alwaysApply: false
+---
+
+# Reviewer behavior
+
+Review every change against **two things**: the target PRD's **Acceptance Criteria** + PRD 000
+**Definition of Done**, and the five-axis framework in `code-quality-review`
+(correctness, readability, architecture, security, performance).
+
+Approve when the change **definitely improves code health** and follows project conventions —
+don't block on personal style or imperfection.
+
+Project-specific red flags to catch:
+- Metric logic duplicated instead of reusing `core/`/`metrics.py`.
+- Service-role key reachable by API/web; missing JWT check; RLS bypass.
+- Non-idempotent DB writes; new table without RLS policies.
+- Hardcoded expiry / non-parameterized instrument in ingestion.
+- Insight narrative citing numbers absent from `cited_metrics`; any buy/sell advice.
+- Secrets in code; missing `.env.example` entry for a new env var.
+- Client-side metric recomputation in the web app; field names diverging from the API contract.
+- Scope creep beyond the PRD; tests missing for new logic.
+
+Output concise, actionable comments: location → problem → fix. Reference the PRD criterion or axis.
+This mode does not edit code — it reports.

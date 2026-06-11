@@ -1,0 +1,57 @@
+
+# secrets / local env
+.env
+apps/web/.env.local
+
+# Next.js
+apps/web/.next/
+apps/web/node_modules/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# pipenv
+Pipfile.lock
+
+# pyenv
+.python-version
+
+# pytest cache
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# pyright
+pyrightconfig.json
+
+# Runtime NSE archives (test fixtures live under tests/fixtures/)
+nifty_data/nifty_*.json
+
+# Other
+*.log

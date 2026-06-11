@@ -1,0 +1,24 @@
+---
+description: Five-axis code review framework. Apply before merging any change or when assessing code quality.
+alwaysApply: false
+---
+
+# Code review — five axes
+
+Adapted from https://github.com/addyosmani/agent-skills (code-review-and-quality).
+
+Review every change across five dimensions:
+
+1. **Correctness** — matches the spec/PRD; edge cases (null/empty/boundary) and error paths
+   handled, not just happy path; tests actually test the right thing; no off-by-one/races.
+2. **Readability & simplicity** — descriptive names; straightforward control flow; could it be
+   fewer lines? abstractions earn their complexity (don't generalize before the 3rd use); no
+   dead code / no-op shims.
+3. **Architecture** — fits existing patterns; clean module boundaries; no duplication that
+   should be shared (esp. metric logic → reuse `core/`); dependencies flow the right way.
+4. **Security** — input validated; secrets out of code/logs/VCS; authz checked; see `security`.
+5. **Performance** — no needless work in hot paths; queries bounded + indexed; see `performance`.
+
+**Approval standard:** approve when the change definitely improves overall code health and
+follows conventions, even if imperfect. Don't block over style. Pair with `reviewer` for the
+project-specific red-flag checklist.

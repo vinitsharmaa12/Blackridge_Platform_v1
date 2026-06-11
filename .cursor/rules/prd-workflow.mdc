@@ -1,0 +1,21 @@
+---
+description: How to implement a PRD from the PRDs/ folder. Apply whenever building a feature, picking up a task, or working through PRDs 001–005.
+alwaysApply: false
+---
+
+# PRD implementation workflow
+
+Specs live in `PRDs/`. To implement one:
+
+1. **Read the PRD** end-to-end (and `PRDs/000-overview-and-conventions.md` for shared context).
+2. Work the **Functional Requirements** in order. Reuse `core/`/`metrics.py`; follow the
+   matching path rule (`worker`/`api`/`web`/`insights`/`db`).
+3. Build in **thin vertical slices** (see `incremental-implementation`): implement → test →
+   verify → commit → next. Don't write a whole PRD in one pass.
+4. Write tests as you go (see `tdd`). New env vars → update `.env.example`.
+5. Before opening a PR, **self-check every box** in the PRD's Acceptance Criteria + the
+   Definition of Done in PRD 000. Keep the PR scoped to one PRD/slice.
+6. If something in the PRD is ambiguous or wrong, surface it — don't silently improvise.
+
+Retire legacy scripts (`orchestrator.py`, `Nifty_option.py`, converters, HTML renderers) only
+in the dedicated cleanup step noted in PRD 001 — not mid-feature.
