@@ -8,6 +8,7 @@ will not duplicate rows.
 """
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -118,6 +119,10 @@ def write_metrics(conn: psycopg.Connection, instrument_id: int, m: MetricsRow) -
     )
     with conn.cursor() as cur:
         cur.execute(sql, values)
+        notify_payload = json.dumps(
+            {"instrument_id": instrument_id, "time": d["time"].isoformat()}
+        )
+        cur.execute("select pg_notify('metrics_new', %s)", (notify_payload,))
 
 
 def write(conn: psycopg.Connection, instrument_id: int,
