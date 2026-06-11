@@ -49,6 +49,12 @@ Manual smoke (API + worker/backfill must have data):
 7. Live toggle connects to `WS /ws/instruments/{symbol}?token=`; KPIs refresh on worker write
 8. Generate insight returns 202 queued job
 
+## Production (Vercel)
+
+See [DEPLOY.md](../../DEPLOY.md) — slice 3. Root directory `apps/web`; set
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL`
+(Railway API HTTPS URL). Update Supabase Auth redirect URLs and Railway `WEB_ORIGIN`.
+
 ## Stack
 
 Next.js App Router · TypeScript strict · Tailwind · shadcn/ui · TanStack Query ·
