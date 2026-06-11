@@ -11,7 +11,7 @@ from apps.api.db import validate_metrics_window
 def test_default_metrics_window() -> None:
     now = datetime(2026, 6, 9, 12, 0, tzinfo=UTC)
     start, end = validate_metrics_window(None, None, max_days=7, now=now)
-    assert end == now
+    assert end == now + timedelta(hours=5, minutes=30)
     assert start == now - timedelta(days=1)
 
 

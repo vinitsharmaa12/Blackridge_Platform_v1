@@ -10,8 +10,10 @@ the conventions and system context in `000-overview-and-conventions.md` — read
 | 000 | [Overview & conventions](000-overview-and-conventions.md) | Shared context, schema, coding standards, Definition of Done | — |
 | 001 | [Ingestion worker](001-ingestion-worker.md) | Live scheduled NSE → DB pipeline | 000, schema applied |
 | 002 | [Backend API](002-backend-api.md) | FastAPI read API + WebSocket | 001 (data in DB) |
-| 003 | [Frontend dashboard](003-frontend-dashboard.md) | Next.js UI + charts | 002 |
-| 004 | [Insights engine](004-insights-engine.md) | Agentic insight generation | 001, 002 |
+| 002.5 | [Deterministic signals](002.5-deterministic-signals.md) | Rule-based plain-language signal cards (no LLM) | 001, 002 |
+| 003a | [Frontend — read-only](003a-frontend-read-only.md) | Dashboard: chain + metrics + **signals** (polled, no live) | 002.5 |
+| 003b | [Frontend — auth & live](003b-frontend-auth-live.md) | Auth + watchlist + live WS + insights panel | 003a, 002 |
+| 004 | [Insights engine](004-insights-engine.md) | Agentic insight generation (**add-on over signals**) | 002.5 |
 | 005 | [Deployment & ops](005-deployment-and-ops.md) | Hosting, CI, scheduling | 001–004 |
 
 ## How to use with Cursor

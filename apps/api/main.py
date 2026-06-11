@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from apps.api.config import Settings, get_settings
 from apps.api.db import check_db, close_pool, init_pool
 from apps.api.models import HealthResponse
-from apps.api.routers import chain, insights, instruments, metrics, watchlist
+from apps.api.routers import chain, insights, instruments, metrics, signals, watchlist
 from apps.api.ws import start_ws_background, stop_ws_background
 
 
@@ -42,9 +42,14 @@ def create_app() -> FastAPI:
 
     app.include_router(instruments.router)
     app.include_router(metrics.router)
+    app.include_router(signals.router)
     app.include_router(chain.router)
     app.include_router(insights.router)
     app.include_router(watchlist.router)
+    if settings.enable_dev_token:
+        from apps.api.routers import dev  # noqa: PLC0415
+
+        app.include_router(dev.router)
     from apps.api import ws as ws_module  # noqa: PLC0415 — avoid circular import
 
     app.include_router(ws_module.router)

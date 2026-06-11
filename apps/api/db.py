@@ -113,6 +113,66 @@ async def fetch_latest_metrics(conn: AsyncConnection, instrument_id: int) -> dic
     return await cur.fetchone()
 
 
+async def fetch_metrics_at_time(
+    conn: AsyncConnection,
+    instrument_id: int,
+    at_time: datetime,
+) -> dict[str, Any] | None:
+    cur = await conn.execute(
+        """
+        select *
+        from metrics
+        where instrument_id = %s and time = %s
+        """,
+        (instrument_id, at_time),
+    )
+    return await cur.fetchone()
+
+
+async def fetch_prev_metrics(
+    conn: AsyncConnection,
+    instrument_id: int,
+    before_time: datetime,
+) -> dict[str, Any] | None:
+    cur = await conn.execute(
+        """
+        select *
+        from metrics
+        where instrument_id = %s and time < %s
+        order by time desc
+        limit 1
+        """,
+        (instrument_id, before_time),
+    )
+    return await cur.fetchone()
+
+
+async def fetch_day_underlying_range(
+    conn: AsyncConnection,
+    instrument_id: int,
+    day_start: datetime,
+    through_time: datetime,
+) -> tuple[float | None, float | None, float | None]:
+    """Return (open, high, low) underlying for the calendar day through `through_time`."""
+    cur = await conn.execute(
+        """
+        select underlying
+        from metrics
+        where instrument_id = %s
+          and time >= %s
+          and time <= %s
+          and underlying is not null
+        order by time asc
+        """,
+        (instrument_id, day_start, through_time),
+    )
+    rows = await cur.fetchall()
+    if not rows:
+        return None, None, None
+    values = [float(r["underlying"]) for r in rows]
+    return values[0], max(values), min(values)
+
+
 async def fetch_top_oi_strikes(
     conn: AsyncConnection,
     instrument_id: int,
@@ -269,11 +329,18 @@ async def resolve_symbol_id(conn: AsyncConnection, symbol: str) -> int | None:
     return int(row["id"]) if row else None
 
 
+# NSE snapshot times are IST wall-clock stored without tz; Postgres reads them as UTC.
+# Extend the default upper bound so same-session rows are not excluded when UTC now
+# lags the stored clock label (e.g. 11:30 IST labeled as 11:30 UTC).
+_IST_OFFSET = timedelta(hours=5, minutes=30)
+
+
 def default_metrics_window(now: datetime | None = None) -> tuple[datetime, datetime]:
-    """Default range: last calendar day in UTC (trading-day approximation for MVP)."""
+    """Default range: last ~24h of session snapshots (IST-aware upper bound)."""
     now = now or datetime.now(tz=UTC)
     start = now - timedelta(days=1)
-    return start, now
+    end = now + _IST_OFFSET
+    return start, end
 
 
 def validate_metrics_window(

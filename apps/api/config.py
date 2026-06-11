@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     ws_poll_seconds: float = 3.0
 
+    enable_dev_token: bool = False
+    dev_token_ttl_seconds: int = 3600
+
 
 @lru_cache
 def get_settings() -> Settings:

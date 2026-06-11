@@ -147,6 +147,7 @@ blackridge/
 3. **Refactor ingestion**: point the scraper at the DB instead of JSON/CSV files;
    compute `metrics.py` inline and store to `metrics`.
 4. **FastAPI** read endpoints over the tables → kill the HTML renderers.
+   See [docs/api.md](docs/api.md) for running the API and dev auth tokens.
 5. **Next.js dashboard** consuming the API (this replaces the HTML UX).
 6. **Insights engine** on top, writing to `insights`.
 7. **Generalize to N instruments**: `symbol` is already a column — add rows, not files.

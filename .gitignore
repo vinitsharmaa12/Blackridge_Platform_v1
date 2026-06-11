@@ -1,6 +1,11 @@
 
 # secrets / local env
 .env
+apps/web/.env.local
+
+# Next.js
+apps/web/.next/
+apps/web/node_modules/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

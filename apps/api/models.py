@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -115,6 +115,23 @@ class WatchlistEntry(BaseModel):
 class InsightJobResponse(BaseModel):
     job_id: str
     status: str = "queued"
+
+
+class SignalCard(BaseModel):
+    key: str
+    category: Literal["bias", "levels", "flow", "structure", "volatility"]
+    title: str
+    text: str
+    direction: Literal["bullish", "bearish", "neutral"]
+    strength: int
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class SignalsResponse(BaseModel):
+    time: datetime
+    underlying: float | None = None
+    overall: SignalCard
+    signals: list[SignalCard]
 
 
 class HealthResponse(BaseModel):
