@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     web_origin: str = "http://localhost:3000"
     api_host: str = "0.0.0.0"
-    api_port: int = 8000
+    api_port: int = Field(default=8000, validation_alias=AliasChoices("PORT", "API_PORT"))
 
     metrics_max_rows: int = 2000
     metrics_max_days: int = 7

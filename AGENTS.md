@@ -54,6 +54,10 @@ PRD 001 (ingestion) → 002 (API) → 003 (frontend) → 004 (insights) → 005 
 ## Verify locally
 - `python -m scripts.process_json` — normalize + enrich real JSONs (no DB).
 - `python -m scripts.backfill --dry-run` — parse all `nifty_data/` (no DB).
+- `python -m scripts.verify_db_schema --smoke-insert` — confirm migrations 0003/0004 on Supabase.
+- `docker build -f worker/Dockerfile -t blackridge-worker .` — worker image (PRD 005 slice 1).
+- `docker build -f apps/api/Dockerfile -t blackridge-api .` — API image (PRD 005 slice 2).
+- `python -m apps.api` — ASGI server (uses `API_PORT` or Railway `PORT`).
 - `python -m worker --once` — single ingestion tick to DB (bypasses market-hours guard).
 - `python -m insights --process-jobs` — drain queued insight jobs (needs `0003_insight_jobs.sql`).
 - Apply `db/migrations/0003_insight_jobs.sql` before first generate; set `OPENROUTER_API_KEY` + model env vars.
@@ -61,3 +65,4 @@ PRD 001 (ingestion) → 002 (API) → 003 (frontend) → 004 (insights) → 005 
 - Dev JWT: set `ENABLE_DEV_TOKEN=true`, then `POST /dev/token` (local only).
 - Web: `cd apps/web && npm run dev` — see [apps/web/README.md](apps/web/README.md).
 - Web gate: `cd apps/web && npm run verify`.
+- Vercel deploy: root directory `apps/web`, env from `apps/web/.env.local.example` — see [DEPLOY.md](DEPLOY.md).
