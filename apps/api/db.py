@@ -4,11 +4,12 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
+from psycopg.errors import UniqueViolation
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
@@ -34,7 +35,7 @@ async def init_pool(settings: Settings) -> None:
     global _pool
     _pool = AsyncConnectionPool(
         conninfo=settings.database_url,
-        kwargs={"row_factory": dict_row},
+        kwargs={"row_factory": dict_row, "prepare_threshold": None},
         open=False,
         min_size=1,
         max_size=10,
@@ -265,6 +266,31 @@ async def fetch_chain_at(
     )
     rows = list(await cur.fetchall())
     return at_time, rows
+
+
+async def enqueue_insight_job(
+    conn: AsyncConnection,
+    *,
+    instrument_id: int,
+    symbol: str,
+    user_id: UUID,
+    session_date: date,
+) -> UUID | None:
+    """Queue an on-demand insight job; None if already queued today (idempotent)."""
+    try:
+        cur = await conn.execute(
+            """
+            insert into insight_jobs
+              (instrument_id, symbol, user_id, trigger_type, session_date, status)
+            values (%s, %s, %s, 'on_demand', %s, 'queued')
+            returning id
+            """,
+            (instrument_id, symbol.upper(), user_id, session_date),
+        )
+        row = await cur.fetchone()
+        return row["id"] if row else None
+    except UniqueViolation:
+        return None
 
 
 async def fetch_insights(

@@ -53,7 +53,8 @@ def database_url() -> str:
 
 @contextmanager
 def connect() -> Iterator[psycopg.Connection]:
-    conn = psycopg.connect(database_url())
+    # Supabase pooler rejects duplicate prepared statements — disable client-side prepare.
+    conn = psycopg.connect(database_url(), prepare_threshold=None)
     try:
         yield conn
         conn.commit()

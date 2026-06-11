@@ -6,16 +6,15 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from apps.api.config import get_settings
-from tests.api.conftest import TEST_USER_ID
+from tests.api.conftest import TEST_USER_ID, apply_test_api_env
 
 
 def _dev_client(monkeypatch: pytest.MonkeyPatch, *, enabled: bool) -> TestClient:
     async def _noop(*_args: object, **_kwargs: object) -> None:
         return None
 
+    apply_test_api_env(monkeypatch)
     monkeypatch.setenv("ENABLE_DEV_TOKEN", "true" if enabled else "false")
-    get_settings.cache_clear()
     monkeypatch.setattr("apps.api.db.init_pool", _noop)
     monkeypatch.setattr("apps.api.db.close_pool", _noop)
     monkeypatch.setattr("apps.api.ws.start_ws_background", _noop)

@@ -44,9 +44,25 @@ def _tick(settings: WorkerSettings) -> None:
         now, market_open=settings.market_open, market_close=settings.market_close
     ):
         logger.debug("idle outside market hours now=%s", now.isoformat())
+        _maybe_session_close(now, settings)
         return
     logger.info("scheduler_tick instruments=%s", settings.instruments)
     run_all(settings)
+    _maybe_session_close(now, settings)
+
+
+def _maybe_session_close(now: datetime, settings: WorkerSettings) -> None:
+    """Enqueue session-close insight jobs once per day after market close."""
+    try:
+        from insights.runner import is_session_close_window, run_session_close
+    except ImportError:
+        return
+    if not is_session_close_window(now, market_close=settings.market_close):
+        return
+    try:
+        run_session_close()
+    except Exception:  # noqa: BLE001 — fail soft
+        logger.exception("session_close_insights_failed")
 
 
 def main() -> int:

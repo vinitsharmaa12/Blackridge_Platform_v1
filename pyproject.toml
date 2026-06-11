@@ -5,7 +5,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-include = ["core/**/*.py", "worker/**/*.py", "apps/**/*.py", "tests/**/*.py", "scripts/**/*.py", "metrics.py"]
+include = ["core/**/*.py", "worker/**/*.py", "apps/**/*.py", "insights/**/*.py", "tests/**/*.py", "scripts/**/*.py", "metrics.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

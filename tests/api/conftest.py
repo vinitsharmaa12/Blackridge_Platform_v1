@@ -9,17 +9,32 @@ import pytest
 from fastapi.testclient import TestClient
 from jose import jwt
 
+from apps.api.config import get_settings
+
 TEST_SECRET = "test-jwt-secret-for-pytest-only-32chars"
 TEST_USER_ID = UUID("11111111-1111-1111-1111-111111111111")
 TEST_SUPABASE_URL = "https://testproject.supabase.co"
 
 
+def apply_test_api_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin API settings so tests never inherit a polluted get_settings() cache."""
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        os.environ.get("DATABASE_URL", "postgresql://localhost/test"),
+    )
+    monkeypatch.setenv("SUPABASE_URL", TEST_SUPABASE_URL)
+    monkeypatch.setenv("SUPABASE_JWT_SECRET", TEST_SECRET)
+    monkeypatch.setenv("WEB_ORIGIN", "http://localhost:3000")
+    get_settings.cache_clear()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _api_env() -> None:
-    os.environ.setdefault("DATABASE_URL", os.environ.get("DATABASE_URL", "postgresql://localhost/test"))
-    os.environ.setdefault("SUPABASE_URL", TEST_SUPABASE_URL)
-    os.environ.setdefault("SUPABASE_JWT_SECRET", TEST_SECRET)
-    os.environ.setdefault("WEB_ORIGIN", "http://localhost:3000")
+    os.environ["DATABASE_URL"] = os.environ.get("DATABASE_URL", "postgresql://localhost/test")
+    os.environ["SUPABASE_URL"] = TEST_SUPABASE_URL
+    os.environ["SUPABASE_JWT_SECRET"] = TEST_SECRET
+    os.environ["WEB_ORIGIN"] = "http://localhost:3000"
+    get_settings.cache_clear()
 
 
 def make_token(
@@ -41,6 +56,9 @@ def make_token(
 
 @pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    apply_test_api_env(monkeypatch)
+    monkeypatch.setenv("ENABLE_DEV_TOKEN", "false")
+
     async def _noop(*_args: object, **_kwargs: object) -> None:
         return None
 

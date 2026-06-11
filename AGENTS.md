@@ -32,6 +32,7 @@ instrument #1; `symbol` is a column — more instruments = more rows, not more f
 | Backend API | `apps/api/` | done (PRD 002) |
 | Deterministic signals | `core/signals.py`, `GET /signals` | done (PRD 002.5) |
 | Web dashboard | `apps/web/` | done (PRD 003a + 003b auth/live) |
+| Insights engine | `insights/`, `POST …/insights:generate` | done (PRD 004) |
 | Legacy (reference, to retire) | `orchestrator.py`, `Nifty_option.py`, converters, HTML renderers | — |
 
 ## core/ API surface
@@ -53,6 +54,9 @@ PRD 001 (ingestion) → 002 (API) → 003 (frontend) → 004 (insights) → 005 
 ## Verify locally
 - `python -m scripts.process_json` — normalize + enrich real JSONs (no DB).
 - `python -m scripts.backfill --dry-run` — parse all `nifty_data/` (no DB).
+- `python -m worker --once` — single ingestion tick to DB (bypasses market-hours guard).
+- `python -m insights --process-jobs` — drain queued insight jobs (needs `0003_insight_jobs.sql`).
+- Apply `db/migrations/0003_insight_jobs.sql` before first generate; set `OPENROUTER_API_KEY` + model env vars.
 - `uvicorn apps.api.main:app --reload` — API at :8000; see [docs/api.md](docs/api.md).
 - Dev JWT: set `ENABLE_DEV_TOKEN=true`, then `POST /dev/token` (local only).
 - Web: `cd apps/web && npm run dev` — see [apps/web/README.md](apps/web/README.md).
