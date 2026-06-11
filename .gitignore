@@ -50,5 +50,8 @@ htmlcov/
 # pyright
 pyrightconfig.json
 
+# Runtime NSE archives (test fixtures live under tests/fixtures/)
+nifty_data/nifty_*.json
+
 # Other
 *.log

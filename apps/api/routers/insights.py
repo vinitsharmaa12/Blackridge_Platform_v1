@@ -11,7 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
 from apps.api.auth import AuthUser, get_current_user
-from apps.api.db import enqueue_insight_job, fetch_insights, fetch_instrument, user_connection
+from apps.api.db import (
+    fetch_insights,
+    fetch_instrument,
+    resolve_on_demand_job,
+    user_connection,
+    user_has_insight_today,
+)
 from apps.api.models import Insight, InsightJobResponse
 
 logger = logging.getLogger(__name__)
@@ -51,22 +57,41 @@ async def generate_insight(
     symbol: str,
     user: AuthUser = Depends(get_current_user),
 ) -> JSONResponse:
+    session_day = _session_date()
     async with user_connection(user) as conn:
         inst = await fetch_instrument(conn, symbol)
         if inst is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown symbol")
-        job_id = await enqueue_insight_job(
+        job_id, job_status_db = await resolve_on_demand_job(
             conn,
             instrument_id=inst["id"],
             symbol=symbol,
             user_id=user.id,
-            session_date=_session_date(),
+            session_date=session_day,
+        )
+        has_insight = await user_has_insight_today(
+            conn,
+            instrument_id=inst["id"],
+            user_id=user.id,
+            session_date=session_day,
         )
 
-    if job_id is None:
-        body = InsightJobResponse(job_id="", status="already_queued").model_dump()
+    if job_status_db == "done" and has_insight:
+        body = InsightJobResponse(job_id=str(job_id), status="already_generated").model_dump()
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)
 
-    asyncio.create_task(_process_job_background(job_id))
-    body = InsightJobResponse(job_id=str(job_id)).model_dump()
+    if job_status_db in ("queued", "failed", "running") or (
+        job_status_db == "done" and not has_insight
+    ):
+        if job_status_db in ("failed", "running") or (
+            job_status_db == "done" and not has_insight
+        ):
+            job_status = "retrying"
+        else:
+            job_status = "queued"
+        asyncio.create_task(_process_job_background(job_id))
+        body = InsightJobResponse(job_id=str(job_id), status=job_status).model_dump()
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)
+
+    body = InsightJobResponse(job_id=str(job_id), status="processing").model_dump()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)

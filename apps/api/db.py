@@ -9,7 +9,6 @@ from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
-from psycopg.errors import UniqueViolation
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
@@ -268,29 +267,68 @@ async def fetch_chain_at(
     return at_time, rows
 
 
-async def enqueue_insight_job(
+async def resolve_on_demand_job(
     conn: AsyncConnection,
     *,
     instrument_id: int,
     symbol: str,
     user_id: UUID,
     session_date: date,
-) -> UUID | None:
-    """Queue an on-demand insight job; None if already queued today (idempotent)."""
-    try:
-        cur = await conn.execute(
-            """
-            insert into insight_jobs
-              (instrument_id, symbol, user_id, trigger_type, session_date, status)
-            values (%s, %s, %s, 'on_demand', %s, 'queued')
-            returning id
-            """,
-            (instrument_id, symbol.upper(), user_id, session_date),
-        )
-        row = await cur.fetchone()
-        return row["id"] if row else None
-    except UniqueViolation:
-        return None
+) -> tuple[UUID, str]:
+    """Insert today's on-demand job or return the existing row (id, status)."""
+    cur = await conn.execute(
+        """
+        insert into insight_jobs
+          (instrument_id, symbol, user_id, trigger_type, session_date, status)
+        values (%s, %s, %s, 'on_demand', %s, 'queued')
+        on conflict (instrument_id, session_date, trigger_type, user_id)
+        where trigger_type = 'on_demand' and user_id is not null
+        do nothing
+        returning id, status
+        """,
+        (instrument_id, symbol.upper(), user_id, session_date),
+    )
+    row = await cur.fetchone()
+    if row:
+        return row["id"], row["status"]
+
+    cur = await conn.execute(
+        """
+        select id, status
+        from insight_jobs
+        where instrument_id = %s
+          and user_id = %s
+          and session_date = %s
+          and trigger_type = 'on_demand'
+        limit 1
+        """,
+        (instrument_id, user_id, session_date),
+    )
+    existing = await cur.fetchone()
+    if existing is None:
+        raise RuntimeError("on-demand insight job missing after conflict")
+    return existing["id"], existing["status"]
+
+
+async def user_has_insight_today(
+    conn: AsyncConnection,
+    *,
+    instrument_id: int,
+    user_id: UUID,
+    session_date: date,
+) -> bool:
+    cur = await conn.execute(
+        """
+        select 1
+        from insights
+        where instrument_id = %s
+          and user_id = %s
+          and (time at time zone 'Asia/Kolkata')::date = %s
+        limit 1
+        """,
+        (instrument_id, user_id, session_date),
+    )
+    return await cur.fetchone() is not None
 
 
 async def fetch_insights(

@@ -32,10 +32,10 @@ export function ChartsPanel({
   chainSection,
 }: ChartsPanelProps) {
   return (
-    <div className="grid min-h-0 grid-cols-1 grid-rows-[minmax(200px,2fr)_minmax(160px,1fr)_minmax(160px,1fr)_minmax(180px,1fr)] gap-2 lg:grid-cols-2 lg:grid-rows-[minmax(200px,2fr)_minmax(150px,1fr)_minmax(180px,1fr)]">
+    <div className="grid min-h-0 grid-cols-1 grid-rows-[minmax(150px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_minmax(180px,1fr)] gap-2 lg:grid-cols-2 lg:grid-rows-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(180px,1fr)]">
       <ChartSection title="Price & levels" compact className="lg:col-span-2">
         <div
-          className="h-full min-h-[200px]"
+          className="h-full min-h-[150px]"
           aria-label="Underlying price chart with support and resistance levels"
         >
           <PriceLevelsChartLoader series={metricsSeries} levels={metricsRow} />

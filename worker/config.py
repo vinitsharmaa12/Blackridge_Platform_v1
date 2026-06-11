@@ -24,7 +24,7 @@ class WorkerSettings(BaseSettings):
     market_close: str = Field("15:35", alias="MARKET_CLOSE")
     # Comma-separated in .env (e.g. NIFTY or NIFTY,BANKNIFTY) — not JSON.
     instruments_csv: str = Field(default="NIFTY", alias="INSTRUMENTS")
-    archive_raw: bool = Field(True, alias="ARCHIVE_RAW")
+    archive_raw: bool = Field(False, alias="ARCHIVE_RAW")
     archive_dir: str = Field("nifty_data", alias="ARCHIVE_DIR")
     fetch_india_vix: bool = Field(False, alias="FETCH_INDIA_VIX")
     nse_timeout: float = Field(15.0, alias="NSE_TIMEOUT")

@@ -11,7 +11,6 @@ snapshot (COG shift, full sentiment, buildup) accept an optional `prev`.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import metrics
 from core.normalize import Snapshot, StrikeRow
@@ -21,21 +20,21 @@ def _sum(rows, attr) -> int:
     return int(sum(getattr(r, attr) or 0 for r in rows))
 
 
-def _atm_row(rows: list[StrikeRow], underlying: float) -> Optional[StrikeRow]:
+def _atm_row(rows: list[StrikeRow], underlying: float) -> StrikeRow | None:
     cands = [r for r in rows if r.strike is not None]
     if not cands or underlying is None:
         return None
     return min(cands, key=lambda r: abs(r.strike - underlying))
 
 
-def _atm_iv(atm: Optional[StrikeRow]) -> Optional[float]:
+def _atm_iv(atm: StrikeRow | None) -> float | None:
     if atm is None:
         return None
     ivs = [v for v in (atm.ce_iv, atm.pe_iv) if v]
     return round(sum(ivs) / len(ivs), 2) if ivs else None
 
 
-def _iv_skew(rows: list[StrikeRow], underlying: float, atm: Optional[StrikeRow]) -> Optional[float]:
+def _iv_skew(rows: list[StrikeRow], underlying: float, atm: StrikeRow | None) -> float | None:
     """Basic 'risk reversal' skew: OTM put IV - OTM call IV at a symmetric offset.
 
     Picks the put one step below and the call one step above ATM by strike order.
@@ -55,7 +54,7 @@ def _iv_skew(rows: list[StrikeRow], underlying: float, atm: Optional[StrikeRow])
     return round(put_leg.pe_iv - call_leg.ce_iv, 2)
 
 
-def _max_pain(rows: list[StrikeRow]) -> Optional[float]:
+def _max_pain(rows: list[StrikeRow]) -> float | None:
     """Strike that minimizes total intrinsic payout to option holders."""
     strikes = sorted({r.strike for r in rows if r.strike is not None})
     if not strikes:
@@ -94,7 +93,7 @@ def _support_resistance(rows: list[StrikeRow], underlying: float) -> dict:
     return out
 
 
-def _buildup(price_change: Optional[float], net_oi_change: int) -> Optional[str]:
+def _buildup(price_change: float | None, net_oi_change: int) -> str | None:
     """Classic price-vs-OI buildup classification. Flat price => neutral."""
     if price_change is None or abs(price_change) < 1e-6 or net_oi_change == 0:
         return None
@@ -113,34 +112,34 @@ def _buildup(price_change: Optional[float], net_oi_change: int) -> Optional[str]
 class MetricsRow:
     time: object
     expiry: object
-    dte: Optional[int]
-    underlying: Optional[float]
-    pcr_oi: Optional[float]
-    pcr_volume: Optional[float]
-    ce_cog: Optional[float]
-    pe_cog: Optional[float]
-    cog_shift: Optional[float]
-    atm_strike: Optional[float]
-    atm_iv: Optional[float]
-    iv_skew: Optional[float]
-    india_vix: Optional[float]
-    atm_straddle: Optional[float]
-    expected_move: Optional[float]
-    max_pain: Optional[float]
+    dte: int | None
+    underlying: float | None
+    pcr_oi: float | None
+    pcr_volume: float | None
+    ce_cog: float | None
+    pe_cog: float | None
+    cog_shift: float | None
+    atm_strike: float | None
+    atm_iv: float | None
+    iv_skew: float | None
+    india_vix: float | None
+    atm_straddle: float | None
+    expected_move: float | None
+    max_pain: float | None
     total_ce_oi: int
     total_pe_oi: int
     net_ce_oi_change: int
     net_pe_oi_change: int
     total_ce_volume: int
     total_pe_volume: int
-    buy_sell_imbalance: Optional[float]
-    buildup: Optional[str]
-    immediate_support: Optional[float]
-    major_support: Optional[float]
-    immediate_resistance: Optional[float]
-    major_resistance: Optional[float]
-    sentiment_score: Optional[int]
-    sentiment_label: Optional[str]
+    buy_sell_imbalance: float | None
+    buildup: str | None
+    immediate_support: float | None
+    major_support: float | None
+    immediate_resistance: float | None
+    major_resistance: float | None
+    sentiment_score: int | None
+    sentiment_label: str | None
     drivers: list
 
     def as_dict(self) -> dict:
@@ -149,8 +148,8 @@ class MetricsRow:
 
 def compute_metrics(
     snap: Snapshot,
-    prev: Optional[Snapshot] = None,
-    india_vix: Optional[float] = None,
+    prev: Snapshot | None = None,
+    india_vix: float | None = None,
 ) -> MetricsRow:
     rows, u = snap.rows, snap.underlying
 

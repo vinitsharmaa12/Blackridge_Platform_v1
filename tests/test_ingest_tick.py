@@ -12,9 +12,9 @@ from core.normalize import Snapshot
 from worker.config import WorkerSettings
 from worker.ingest import COUNTERS, run_all, run_tick
 
-NIFTY_DATA = Path(__file__).resolve().parent.parent / "nifty_data"
-FIXTURE = json.loads((NIFTY_DATA / "nifty_20260608_103626.json").read_text())
-FIXTURE_NEXT = json.loads((NIFTY_DATA / "nifty_20260608_103751.json").read_text())
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+FIXTURE = json.loads((FIXTURES / "nifty_20260608_103626.json").read_text())
+FIXTURE_NEXT = json.loads((FIXTURES / "nifty_20260608_103751.json").read_text())
 
 
 @pytest.fixture

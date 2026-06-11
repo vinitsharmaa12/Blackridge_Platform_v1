@@ -9,9 +9,8 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import date, datetime
 from pathlib import Path
-from typing import Optional
 
 # NSE server timestamp, e.g. "08-Jun-2026 09:21:00"
 _NSE_TS = "%d-%b-%Y %H:%M:%S"
@@ -21,7 +20,7 @@ _EXPIRY_FMT = "%d-%m-%Y"
 _FNAME_RE = re.compile(r"(\d{8})_(\d{6})")
 
 
-def _num(v) -> Optional[float]:
+def _num(v) -> float | None:
     if v is None or v == "":
         return None
     try:
@@ -30,7 +29,7 @@ def _num(v) -> Optional[float]:
         return None
 
 
-def _int(v) -> Optional[int]:
+def _int(v) -> int | None:
     n = _num(v)
     return int(round(n)) if n is not None else None
 
@@ -39,27 +38,27 @@ def _int(v) -> Optional[int]:
 class StrikeRow:
     """One per-strike row, keyed to option_snapshots columns."""
     time: datetime
-    expiry: Optional[date]
+    expiry: date | None
     strike: float
-    underlying: Optional[float]
-    ce_oi: Optional[int] = None
-    ce_oi_change: Optional[int] = None
-    ce_iv: Optional[float] = None
-    ce_ltp: Optional[float] = None
-    ce_volume: Optional[int] = None
-    ce_change: Optional[float] = None
-    ce_pchange: Optional[float] = None
-    ce_buy_qty: Optional[int] = None
-    ce_sell_qty: Optional[int] = None
-    pe_oi: Optional[int] = None
-    pe_oi_change: Optional[int] = None
-    pe_iv: Optional[float] = None
-    pe_ltp: Optional[float] = None
-    pe_volume: Optional[int] = None
-    pe_change: Optional[float] = None
-    pe_pchange: Optional[float] = None
-    pe_buy_qty: Optional[int] = None
-    pe_sell_qty: Optional[int] = None
+    underlying: float | None
+    ce_oi: int | None = None
+    ce_oi_change: int | None = None
+    ce_iv: float | None = None
+    ce_ltp: float | None = None
+    ce_volume: int | None = None
+    ce_change: float | None = None
+    ce_pchange: float | None = None
+    ce_buy_qty: int | None = None
+    ce_sell_qty: int | None = None
+    pe_oi: int | None = None
+    pe_oi_change: int | None = None
+    pe_iv: float | None = None
+    pe_ltp: float | None = None
+    pe_volume: int | None = None
+    pe_change: float | None = None
+    pe_pchange: float | None = None
+    pe_buy_qty: int | None = None
+    pe_sell_qty: int | None = None
     source: str = "nse"
 
 
@@ -67,12 +66,12 @@ class StrikeRow:
 class Snapshot:
     """A full normalized snapshot for one instrument at one timestamp."""
     time: datetime
-    underlying: Optional[float]
-    expiry: Optional[date]
+    underlying: float | None
+    expiry: date | None
     rows: list[StrikeRow] = field(default_factory=list)
 
     @property
-    def dte(self) -> Optional[int]:
+    def dte(self) -> int | None:
         if self.expiry is None:
             return None
         return (self.expiry - self.time.date()).days
@@ -91,7 +90,7 @@ def _parse_timestamp(records: dict, source_name: str) -> datetime:
     raise ValueError(f"Could not derive timestamp from {source_name!r}")
 
 
-def _parse_expiry(leg: dict) -> Optional[date]:
+def _parse_expiry(leg: dict) -> date | None:
     ev = leg.get("expiryDate")
     if not ev:
         return None
@@ -126,7 +125,7 @@ def normalize(raw: dict, source_name: str = "") -> Snapshot:
     top_underlying = _num(records.get("underlyingValue"))
 
     rows: list[StrikeRow] = []
-    expiry: Optional[date] = None
+    expiry: date | None = None
     for rec in data:
         ce = rec.get("CE") or {}
         pe = rec.get("PE") or {}

@@ -4,7 +4,7 @@ create table if not exists public.insight_jobs (
   id              uuid primary key default gen_random_uuid(),
   instrument_id   smallint not null references public.instruments(id),
   symbol          text not null,
-  user_id         uuid references auth.users(id) on delete cascade,
+  user_id         uuid,
   trigger_type    text not null check (trigger_type in ('on_demand', 'session_close')),
   session_date    date not null,
   status          text not null default 'queued'

@@ -61,7 +61,13 @@ export function InsightsPanel({ symbol }: InsightsPanelProps) {
 
       {generateMutation.isSuccess ? (
         <p className="text-[10px] text-muted-foreground">
-          Queued job {generateMutation.data.job_id} ({generateMutation.data.status})
+          {generateMutation.data.status === "already_generated"
+            ? "Today's insight is ready below."
+            : generateMutation.data.status === "retrying"
+              ? "Retrying insight generation…"
+              : generateMutation.data.status === "queued"
+                ? "Generating insight…"
+                : "Processing insight…"}
         </p>
       ) : null}
       {generateMutation.isError ? (

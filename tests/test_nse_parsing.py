@@ -17,7 +17,7 @@ from core.sources.nse import (
     resolve_expiry,
 )
 
-NIFTY_DATA = Path(__file__).resolve().parent.parent / "nifty_data"
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 def test_normalize_fixture(sample_chain_json: dict) -> None:
@@ -48,7 +48,7 @@ def test_normalize_empty_raises(empty_chain_json: dict) -> None:
 
 
 def test_fetch_chain_with_expiry_mocked() -> None:
-    fixture = json.loads((NIFTY_DATA / "nifty_20260608_103626.json").read_text())
+    fixture = json.loads((FIXTURES / "nifty_20260608_103626.json").read_text())
     session = MagicMock()
     session.headers = {}
     session.get.return_value = MagicMock(status_code=200)
@@ -60,7 +60,7 @@ def test_fetch_chain_with_expiry_mocked() -> None:
 
 
 def test_fetch_chain_auto_expiry_mocked() -> None:
-    fixture = json.loads((NIFTY_DATA / "nifty_20260608_103626.json").read_text())
+    fixture = json.loads((FIXTURES / "nifty_20260608_103626.json").read_text())
 
     with patch("core.sources.nse.requests.Session") as sess_cls:
         session = MagicMock()
@@ -72,7 +72,7 @@ def test_fetch_chain_auto_expiry_mocked() -> None:
 
 
 def test_fetch_chain_retries_on_timeout() -> None:
-    fixture = json.loads((NIFTY_DATA / "nifty_20260608_103626.json").read_text())
+    fixture = json.loads((FIXTURES / "nifty_20260608_103626.json").read_text())
     calls = {"n": 0}
 
     def _get_json(_session, url, timeout):  # noqa: ARG001
