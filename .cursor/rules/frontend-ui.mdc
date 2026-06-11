@@ -1,0 +1,22 @@
+---
+description: Frontend UI engineering practices for the Next.js dashboard. Apply when building or changing UI components, charts, or pages.
+globs: apps/web/**
+alwaysApply: false
+---
+
+# Frontend UI engineering
+
+Adapted from https://github.com/addyosmani/agent-skills (frontend-ui-engineering); see the
+upstream skill for depth.
+
+- **Accessibility:** semantic HTML, labelled controls, keyboard nav, sufficient contrast,
+  visible focus. Charts need text/table alternatives or aria summaries for key numbers.
+- **States first:** design loading (skeletons), empty (market closed / no data), and error
+  (toast + retry) before the happy path. Never an infinite spinner.
+- **Performance:** server components by default; lazy-load heavy chart libs on the client;
+  memoize expensive renders; virtualize long option-chain tables; avoid layout shift.
+- **Consistency:** compose shadcn/ui primitives; one design token set (spacing/color/typography);
+  don't hand-roll components that shadcn already provides.
+- **Data discipline:** fetch via TanStack Query with sensible cache keys; show stale-while-revalidate;
+  never recompute metrics client-side — render what the API returns.
+- **Responsiveness:** laptop-first, tablet-tolerable; test at narrow widths.

@@ -1,0 +1,17 @@
+---
+description: Testing conventions (pytest + fixtures)
+globs: tests/**
+alwaysApply: false
+---
+
+# Tests
+
+- `pytest`. Every non-trivial logic unit gets a test: **happy path + at least one edge case**.
+- Use the real JSON fixtures in `nifty_data/` to test `core/normalize` + `core/enrich`
+  (they exercise true NSE shapes, including empty `{}` files).
+- Pure-logic tests need no DB. For DB-touching code, mock `core.db` or use a disposable
+  test database — never the production `DATABASE_URL`.
+- Insights: include a **mocked-model contract test** asserting output shape and the grounding
+  rule (every cited number present in `cited_metrics`).
+- Follow the `tdd` rule: for bug fixes, write a failing test that reproduces the bug first.
+- Keep tests deterministic (freeze time where needed; no live network).

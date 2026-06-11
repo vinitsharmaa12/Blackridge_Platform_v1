@@ -1,0 +1,20 @@
+---
+description: Next.js frontend conventions (PRD 003)
+globs: apps/web/**
+alwaysApply: false
+---
+
+# Frontend dashboard (PRD 003)
+
+- Next.js App Router, **TypeScript strict**. Server components by default; client components
+  only for charts/live/interactivity.
+- **Consume the API; never recompute metrics client-side.** Derive types from the API's
+  OpenAPI contract (`openapi-typescript`) so field names match the backend/DB exactly.
+- UI: Tailwind + shadcn/ui. Charts: **lightweight-charts** for price/levels/OI candles,
+  **Recharts** for metric panels (PCR/sentiment/IV-skew/OI-by-strike). Data: **TanStack Query**.
+- Auth via `@supabase/supabase-js` (auth only — no direct service-role DB access). Attach the
+  JWT to API calls. Protected routes redirect unauthenticated users to login.
+- Always handle **loading / empty (market closed) / error** states. Missing metric values
+  (null `india_vix`, early `cog_shift`) render as "—", never crash.
+- Live toggle subscribes to the API WebSocket; auto-reconnect with backoff, fall back to polling.
+- See also the `frontend-ui` rule for UI engineering practices.

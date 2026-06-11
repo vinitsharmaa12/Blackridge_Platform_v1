@@ -1,0 +1,24 @@
+---
+description: Deliver changes in thin verifiable slices. Apply when implementing any multi-file change or a feature that feels too big for one step.
+alwaysApply: false
+---
+
+# Incremental implementation
+
+Adapted from https://github.com/addyosmani/agent-skills (incremental-implementation).
+
+Build in thin vertical slices. Each increment leaves the system working and testable.
+
+**Increment cycle:** Implement the smallest complete piece → Test → Verify (tests pass / build
+ok / manual check) → Commit → next slice. Carry forward, don't restart.
+
+**Slicing:**
+- **Vertical** (preferred): one complete path through the stack (DB + API + UI) per slice.
+- **Contract-first**: define the API contract (types/OpenAPI), then build backend + frontend
+  against it in parallel, then integrate. Fits the PRD 002 → 003 split.
+- **Risk-first**: prove the riskiest piece first (e.g. NSE cookie/fetch, the WebSocket) before
+  building on it.
+
+**Rule 0 — simplicity first:** ask "what's the simplest thing that could work?" before coding.
+Don't write more than ~100 lines before testing. Only skip this for single-file, single-function
+changes.

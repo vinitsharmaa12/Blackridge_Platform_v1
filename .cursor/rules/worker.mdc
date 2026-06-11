@@ -1,0 +1,20 @@
+---
+description: Ingestion worker + NSE source conventions (PRD 001)
+globs: worker/**,core/sources/**
+alwaysApply: false
+---
+
+# Ingestion worker (PRD 001)
+
+- One scheduled process (APScheduler). Tick = fetch → `normalize` → load `prev` from DB →
+  `compute_metrics(snap, prev=prev)` → `db.write`. Idle outside market hours.
+- **Never hardcode expiry.** `core/sources/nse.py` auto-resolves the nearest expiry from
+  `records.expiryDates`. Fetch is instrument-parameterized: `fetch_chain(symbol, expiry=None)`.
+- NSE fetch must prime cookies (GET the page before the API), use realistic headers, a
+  timeout, and `tenacity` retry/backoff on 401/403/5xx/timeouts.
+- Load `prev` from the DB so `cog_shift`/`buildup` are real in production (not just backfill).
+- **Fail soft:** a bad tick/instrument logs and continues; the worker never crashes the loop.
+- Empty `{}` NSE responses happen — skip, log, don't write.
+- Connect with the **service-role** DB connection. Writes are idempotent.
+- Instruments come from config (start `["NIFTY"]`); adding one is config-only, not code.
+- Reuse `core/` for all parsing/metrics — the worker only orchestrates I/O + scheduling.

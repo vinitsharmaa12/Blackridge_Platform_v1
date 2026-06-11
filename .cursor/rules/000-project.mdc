@@ -1,0 +1,32 @@
+---
+description: Blackridge Platform core conventions — always applied
+alwaysApply: true
+---
+
+# Blackridge Platform — project rules
+
+Multi-user analytics platform for NSE index-option data. Nifty50 is instrument #1;
+`symbol` is a column, so more instruments = more rows, not more files.
+
+## Specs are authoritative
+- Implementation specs live in `PRDs/` (`000` = overview & conventions, `001`–`005` =
+  build units). Implement against the target PRD's **Functional Requirements** and
+  **Acceptance Criteria**. When unsure, read the PRD before coding.
+
+## Reuse, don't rewrite
+- `core/normalize.py`, `core/enrich.py`, `core/db.py`, and `metrics.py` are built and
+  validated. Build on them. Never duplicate metric logic.
+
+## Stack (decided — see ARCHITECTURE.md)
+- DB: **Supabase plain Postgres 17** (NO TimescaleDB — deprecated on PG17; scale via
+  `pg_partman` later). RLS is ON.
+- Backend: Python 3.13, FastAPI, psycopg 3, APScheduler. Frontend: Next.js (App Router) +
+  TypeScript strict + Tailwind + shadcn/ui + TanStack Query + lightweight-charts + Recharts.
+- Insights: Anthropic SDK (Claude). Hosting: Supabase + Railway + Vercel.
+
+## Non-negotiables
+- **Secrets** come from env only; never commit them; never expose the Supabase service-role
+  key to the API or browser. Workers write with service-role; API/web use least-privilege.
+- **Writes are idempotent** (ON CONFLICT). **Python is fully type-hinted** and `ruff`-clean;
+  **TypeScript is strict**.
+- Keep PRs small and scoped to one PRD/slice.

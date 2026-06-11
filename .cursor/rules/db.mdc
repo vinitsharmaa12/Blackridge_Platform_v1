@@ -1,0 +1,19 @@
+---
+description: Database / migrations / RLS conventions
+globs: db/**
+alwaysApply: false
+---
+
+# Database & migrations
+
+- Plain **Supabase Postgres 17**. **Do NOT use TimescaleDB** (deprecated on PG17). The scale
+  path is native range partitioning via `pg_partman` + `pg_cron` (`0002_partitioning.sql`),
+  applied only when `option_snapshots` is genuinely large.
+- Migrations are forward-only, ordered (`0001_…`, `0002_…`), and idempotent where possible
+  (`if not exists`, `on conflict`). `0001_init.sql` is applied; don't rewrite history — add new files.
+- **RLS contract:** market data (`instruments`, `option_snapshots`, `metrics`, `insights`) is
+  read-only to authenticated users; only the service role writes. `profiles`/`watchlists` are
+  owner-scoped on `auth.uid()`. Any new table: enable RLS and add explicit policies.
+- Partition-key/PK rule: any table that may become partitioned keeps `time` in its PK.
+- New metric columns must stay in sync with `MetricsRow` in `core/enrich.py`.
+- Never embed secrets/credentials in SQL.
