@@ -21,18 +21,18 @@ export function useMetricsSeries(symbol: string) {
   });
 }
 
-export function useSignals(symbol: string, at: string) {
+export function useSignals(symbol: string, endAt: string) {
   return useQuery({
-    queryKey: ["signals", symbol, at],
-    queryFn: () => api.getSignals(symbol, { at }),
+    queryKey: ["signals", symbol, endAt],
+    queryFn: () => api.getSignals(symbol, { at: endAt }),
     refetchInterval: 60_000,
   });
 }
 
-export function useChain(symbol: string, at: string) {
+export function useChain(symbol: string, endAt: string) {
   return useQuery({
-    queryKey: ["chain", symbol, at],
-    queryFn: () => api.getChain(symbol, { at }),
+    queryKey: ["chain", symbol, endAt],
+    queryFn: () => api.getChain(symbol, { at: endAt }),
     refetchInterval: 60_000,
   });
 }
