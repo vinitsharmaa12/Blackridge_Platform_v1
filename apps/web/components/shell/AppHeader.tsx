@@ -3,7 +3,7 @@
 import { LogOut } from "lucide-react";
 
 import { LiveToggle } from "@/components/dashboard/LiveToggle";
-import { SnapshotControls } from "@/components/dashboard/SnapshotControls";
+import { TimeRangeControls } from "@/components/dashboard/TimeRangeControls";
 import { useDashboardHeader } from "@/components/providers/DashboardHeaderProvider";
 import { InstrumentNav } from "@/components/shell/InstrumentNav";
 import { SignOutButton } from "@/components/shell/SignOutButton";
@@ -27,10 +27,11 @@ export function AppHeader({ email }: AppHeaderProps) {
             onToggle={headerControls.onLiveToggle}
             variant="inline"
           />
-          <SnapshotControls
-            at={headerControls.at}
-            snapshots={headerControls.snapshots}
-            onChange={headerControls.onSnapshotChange}
+          <TimeRangeControls
+            timeRange={headerControls.timeRange}
+            snapshotTimes={headerControls.snapshotTimes}
+            onChange={headerControls.onTimeRangeChange}
+            disabled={headerControls.timeRangeDisabled}
             variant="inline"
           />
         </div>

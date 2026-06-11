@@ -10,14 +10,16 @@ import {
 } from "react";
 
 import type { LiveConnectionStatus } from "@/hooks/useLiveMetrics";
+import type { TimeRangeSelection } from "@/lib/time-range";
 
 export type DashboardHeaderControls = {
   liveEnabled: boolean;
   liveStatus: LiveConnectionStatus;
   onLiveToggle: () => void;
-  at: string;
-  snapshots: string[];
-  onSnapshotChange: (at: string) => void;
+  timeRange: TimeRangeSelection;
+  snapshotTimes: string[];
+  onTimeRangeChange: (range: TimeRangeSelection) => void;
+  timeRangeDisabled?: boolean;
 };
 
 type DashboardHeaderContextValue = {
@@ -66,9 +68,10 @@ export function useDashboardHeaderControls(
     liveEnabled,
     liveStatus,
     onLiveToggle,
-    at,
-    snapshots,
-    onSnapshotChange,
+    timeRange,
+    snapshotTimes,
+    onTimeRangeChange,
+    timeRangeDisabled,
   } = controls;
 
   useEffect(() => {
@@ -80,8 +83,9 @@ export function useDashboardHeaderControls(
     liveEnabled,
     liveStatus,
     onLiveToggle,
-    at,
-    snapshots,
-    onSnapshotChange,
+    timeRange,
+    snapshotTimes,
+    onTimeRangeChange,
+    timeRangeDisabled,
   ]);
 }

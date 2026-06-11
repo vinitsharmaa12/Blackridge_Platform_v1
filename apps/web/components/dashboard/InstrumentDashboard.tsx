@@ -29,13 +29,23 @@ import {
 } from "@/hooks/useDashboard";
 import { useLiveMetrics } from "@/hooks/useLiveMetrics";
 import { formatApiError } from "@/lib/errors";
+import {
+  clampRange,
+  defaultTimeRange,
+  deriveSessionBounds,
+  EMPTY_TIME_RANGE,
+  filterMetricsByRange,
+  resolveEndAt,
+  snapshotTimesFromSeries,
+  type TimeRangeSelection,
+} from "@/lib/time-range";
 
 type InstrumentDashboardProps = {
   symbol: string;
 };
 
 export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
-  const [at, setAt] = useState("latest");
+  const [timeRange, setTimeRange] = useState<TimeRangeSelection>(EMPTY_TIME_RANGE);
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [dismissedToast, setDismissedToast] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
@@ -62,16 +72,85 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
 
   const latestQuery = useLatest(symbol);
   const metricsQuery = useMetricsSeries(symbol);
-  const signalsQuery = useSignals(symbol, at);
-  const chainQuery = useChain(symbol, at);
-
-  const snapshotTimes = useMemo(
-    () => (metricsQuery.data ?? []).map((row) => row.time).reverse(),
+  const metricsSeries = useMemo(
+    () => metricsQuery.data ?? [],
     [metricsQuery.data],
   );
 
+  const sessionBounds = useMemo(
+    () => deriveSessionBounds(metricsQuery.data),
+    [metricsQuery.data],
+  );
+
+  const snapshotTimes = useMemo(
+    () => snapshotTimesFromSeries(metricsQuery.data),
+    [metricsQuery.data],
+  );
+
+  const resolvedTimeRange = useMemo(() => {
+    if (!sessionBounds) {
+      return timeRange;
+    }
+    if (!timeRange.from && !timeRange.to) {
+      return defaultTimeRange(sessionBounds);
+    }
+    if (timeRange.mode === "current") {
+      return timeRange;
+    }
+    const clamped = clampRange(timeRange.from, timeRange.to, sessionBounds);
+    const next = { ...timeRange, from: clamped.from, to: clamped.to };
+    if (liveEnabled) {
+      return { ...next, to: sessionBounds.to };
+    }
+    return next;
+  }, [timeRange, sessionBounds, liveEnabled]);
+
+  const endAt = useMemo(
+    () => resolveEndAt(resolvedTimeRange, sessionBounds),
+    [resolvedTimeRange, sessionBounds],
+  );
+
+  const signalsQuery = useSignals(symbol, endAt);
+  const chainQuery = useChain(symbol, endAt);
+
+  const effectiveRange = useMemo(() => {
+    if (!sessionBounds) {
+      return { from: resolvedTimeRange.from, to: resolvedTimeRange.to };
+    }
+    if (resolvedTimeRange.mode === "current") {
+      return { from: sessionBounds.to, to: sessionBounds.to };
+    }
+    return clampRange(
+      resolvedTimeRange.from,
+      resolvedTimeRange.to,
+      sessionBounds,
+    );
+  }, [resolvedTimeRange, sessionBounds]);
+
+  const filteredSeries = useMemo(
+    () =>
+      filterMetricsByRange(
+        metricsSeries,
+        effectiveRange.from,
+        effectiveRange.to,
+      ),
+    [metricsSeries, effectiveRange.from, effectiveRange.to],
+  );
+
+  const metricsRow = useMemo(() => {
+    if (resolvedTimeRange.mode === "current") {
+      return latestQuery.data?.metrics;
+    }
+    const fromSeries = metricsAtTime(metricsQuery.data, effectiveRange.to);
+    return fromSeries ?? latestQuery.data?.metrics;
+  }, [resolvedTimeRange.mode, latestQuery.data, metricsQuery.data, effectiveRange.to]);
+
   const onLiveToggle = useCallback(() => {
     setLiveEnabled((v) => !v);
+  }, []);
+
+  const onTimeRangeChange = useCallback((range: TimeRangeSelection) => {
+    setTimeRange(range);
   }, []);
 
   const headerControls = useMemo(
@@ -79,24 +158,22 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
       liveEnabled,
       liveStatus,
       onLiveToggle,
-      at,
-      snapshots: snapshotTimes,
-      onSnapshotChange: setAt,
+      timeRange: resolvedTimeRange,
+      snapshotTimes,
+      onTimeRangeChange,
+      timeRangeDisabled: snapshotTimes.length === 0,
     }),
-    [liveEnabled, liveStatus, onLiveToggle, at, snapshotTimes],
+    [
+      liveEnabled,
+      liveStatus,
+      onLiveToggle,
+      resolvedTimeRange,
+      snapshotTimes,
+      onTimeRangeChange,
+    ],
   );
 
   useDashboardHeaderControls(headerControls);
-
-  const metricsSeries = metricsQuery.data ?? [];
-
-  const metricsRow = useMemo(() => {
-    if (at === "latest") {
-      return latestQuery.data?.metrics;
-    }
-    const fromSeries = metricsAtTime(metricsQuery.data, at);
-    return fromSeries ?? latestQuery.data?.metrics;
-  }, [at, latestQuery.data, metricsQuery.data]);
 
   const dayOpen = metricsSeries[0]?.underlying ?? null;
   const dayChange =
@@ -187,7 +264,7 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
         <div className="min-h-0 flex-1 overflow-hidden pt-2">
           {activeTab === "overview" ? (
             <OverviewPanel
-              metricsSeries={metricsSeries}
+              metricsSeries={filteredSeries}
               metricsRow={metricsRow}
               chain={chain}
               chainSection={chainSection}
