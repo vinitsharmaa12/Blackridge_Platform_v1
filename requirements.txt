@@ -5,35 +5,36 @@
 # =============================================================================
 
 # ----------------------------------------------------------------------------
-# [1] CURRENTLY USED — required to run the existing scripts today
+# [1] ACTIVE — ingestion worker + core scripts
 # ----------------------------------------------------------------------------
-requests==2.32.3              # NSE option-chain scraping (Nifty_option.py)
-# (everything else the current scripts use is Python stdlib: csv, json,
-#  pathlib, subprocess, datetime, webbrowser, typing, os, sys, time)
+requests==2.32.3              # NSE option-chain fetch (sync worker)
+pydantic==2.10.4              # settings models
+pydantic-settings==2.7.1      # 12-factor config from env vars
+psycopg[binary]==3.2.3        # Postgres driver (Supabase)
+apscheduler==3.11.0           # ingestion scheduler
+tenacity==9.0.0               # retry/backoff for flaky NSE endpoints
 
+# --- Dev / quality (ingestion) ---------------------------------------------
+pytest==8.3.4
+ruff==0.8.4
 
 # ----------------------------------------------------------------------------
 # [2] PLATFORM TARGET — uncomment as you build out the platform (see ARCHITECTURE.md)
 # ----------------------------------------------------------------------------
 
 # --- API layer -------------------------------------------------------------
-fastapi==0.115.6            # REST + WebSocket API for the Next.js frontend
-uvicorn[standard]==0.34.0   # ASGI server
-pydantic==2.10.4            # request/response + settings models
-pydantic-settings==2.7.1    # 12-factor config from env vars
+# fastapi==0.115.6            # REST + WebSocket API for the Next.js frontend
+# uvicorn[standard]==0.34.0   # ASGI server
 
 # --- Database / time-series ------------------------------------------------
-sqlalchemy==2.0.36          # ORM / query builder over Postgres
-psycopg[binary]==3.2.3      # Postgres driver (works with TimescaleDB)
-alembic==1.14.0             # schema migrations
-asyncpg==0.30.0             # async Postgres driver (optional, for async API)
+# sqlalchemy==2.0.36          # ORM / query builder over Postgres
+# alembic==1.14.0             # schema migrations
+# asyncpg==0.30.0             # async Postgres driver (optional, for async API)
 
-# --- Ingestion / scheduling ------------------------------------------------
-apscheduler==3.11.0         # in-process cron (replaces orchestrator.py loop)
-arq==0.26.3                 # Redis-backed async job queue (scale-out option)
-redis==5.2.1                # queue + caching + websocket fan-out
-tenacity==9.0.0             # retry/backoff for flaky NSE endpoints
-httpx==0.28.1               # modern async HTTP client (replaces requests)
+# --- Ingestion / scheduling (scale-out) ------------------------------------
+# arq==0.26.3                 # Redis-backed async job queue
+# redis==5.2.1                # queue + caching + websocket fan-out
+# httpx==0.28.1               # async HTTP client
 
 # --- Data / metrics --------------------------------------------------------
 pandas==2.2.3               # vectorized metric computation
@@ -48,7 +49,5 @@ agno==1.1.1                 # agent framework (you already have its MCP/skill)
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 
-# --- Dev / quality ---------------------------------------------------------
-pytest==8.3.4
-ruff==0.8.4
-mypy==1.14.0
+# --- Dev / quality (later) -------------------------------------------------
+# mypy==1.14.0

@@ -9,8 +9,9 @@ will not duplicate rows.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from datetime import date
 
 import psycopg
 from psycopg.types.json import Json
@@ -125,3 +126,83 @@ def write(conn: psycopg.Connection, instrument_id: int,
     n = write_snapshot(conn, instrument_id, snap)
     write_metrics(conn, instrument_id, metrics_row)
     return n
+
+
+def load_prev_snapshot(conn: psycopg.Connection, instrument_id: int) -> Snapshot | None:
+    """Reconstruct the most recent stored snapshot for an instrument."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "select max(time) from option_snapshots where instrument_id = %s",
+            (instrument_id,),
+        )
+        row = cur.fetchone()
+        if not row or row[0] is None:
+            return None
+        prev_time = row[0]
+        cur.execute(
+            """
+            select time, expiry, strike, underlying,
+                   ce_oi, ce_oi_change, ce_iv, ce_ltp, ce_volume,
+                   ce_change, ce_pchange, ce_buy_qty, ce_sell_qty,
+                   pe_oi, pe_oi_change, pe_iv, pe_ltp, pe_volume,
+                   pe_change, pe_pchange, pe_buy_qty, pe_sell_qty,
+                   source
+            from option_snapshots
+            where instrument_id = %s and time = %s
+            order by strike
+            """,
+            (instrument_id, prev_time),
+        )
+        db_rows = cur.fetchall()
+
+    if not db_rows:
+        return None
+
+    strike_rows: list[StrikeRow] = []
+    underlying: float | None = None
+    expiry: date | None = None
+    ts = db_rows[0][0]
+
+    for r in db_rows:
+        (
+            time_val, exp, strike, und,
+            ce_oi, ce_oi_change, ce_iv, ce_ltp, ce_volume,
+            ce_change, ce_pchange, ce_buy_qty, ce_sell_qty,
+            pe_oi, pe_oi_change, pe_iv, pe_ltp, pe_volume,
+            pe_change, pe_pchange, pe_buy_qty, pe_sell_qty,
+            source,
+        ) = r
+        ts = time_val
+        if expiry is None and exp is not None:
+            expiry = exp
+        if underlying is None and und is not None:
+            underlying = float(und)
+        strike_rows.append(
+            StrikeRow(
+                time=time_val,
+                expiry=exp,
+                strike=float(strike),
+                underlying=float(und) if und is not None else None,
+                ce_oi=ce_oi,
+                ce_oi_change=ce_oi_change,
+                ce_iv=float(ce_iv) if ce_iv is not None else None,
+                ce_ltp=float(ce_ltp) if ce_ltp is not None else None,
+                ce_volume=ce_volume,
+                ce_change=float(ce_change) if ce_change is not None else None,
+                ce_pchange=float(ce_pchange) if ce_pchange is not None else None,
+                ce_buy_qty=ce_buy_qty,
+                ce_sell_qty=ce_sell_qty,
+                pe_oi=pe_oi,
+                pe_oi_change=pe_oi_change,
+                pe_iv=float(pe_iv) if pe_iv is not None else None,
+                pe_ltp=float(pe_ltp) if pe_ltp is not None else None,
+                pe_volume=pe_volume,
+                pe_change=float(pe_change) if pe_change is not None else None,
+                pe_pchange=float(pe_pchange) if pe_pchange is not None else None,
+                pe_buy_qty=pe_buy_qty,
+                pe_sell_qty=pe_sell_qty,
+                source=source or "nse",
+            )
+        )
+
+    return Snapshot(time=ts, underlying=underlying, expiry=expiry, rows=strike_rows)

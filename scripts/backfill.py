@@ -8,12 +8,14 @@ buildup) are correct. Idempotent — safe to re-run.
     python -m scripts.backfill --symbol NIFTY --dir nifty_data
 """
 from __future__ import annotations
-
+from dotenv import load_dotenv
 import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+load_dotenv()
 
 from core.enrich import compute_metrics
 from core.normalize import normalize_file
