@@ -19,6 +19,11 @@ export const EMPTY_TIME_RANGE: TimeRangeSelection = {
   to: "",
 };
 
+/** YYYYMMDD from an ISO metrics timestamp (IST wall-clock date label). */
+export function sessionDateFromIso(iso: string): string {
+  return iso.slice(0, 10).replace(/-/g, "");
+}
+
 export function deriveSessionBounds(
   series: MetricsRow[] | undefined,
 ): SessionBounds | null {

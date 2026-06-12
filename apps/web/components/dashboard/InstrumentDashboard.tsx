@@ -25,6 +25,7 @@ import {
   useChain,
   useLatest,
   useMetricsSeries,
+  useSessionSnapshots,
   useSignals,
 } from "@/hooks/useDashboard";
 import { useLiveMetrics } from "@/hooks/useLiveMetrics";
@@ -34,6 +35,7 @@ import {
   defaultTimeRange,
   deriveSessionBounds,
   EMPTY_TIME_RANGE,
+  sessionDateFromIso,
   filterMetricsByRange,
   resolveEndAt,
   snapshotTimesFromSeries,
@@ -49,6 +51,9 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [dismissedToast, setDismissedToast] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [sessionDateOverride, setSessionDateOverride] = useState<
+    string | undefined
+  >(undefined);
   const queryClient = useQueryClient();
 
   const refreshDashboard = useCallback(() => {
@@ -56,6 +61,7 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
     queryClient.invalidateQueries({ queryKey: ["metrics", symbol] });
     queryClient.invalidateQueries({ queryKey: ["signals", symbol] });
     queryClient.invalidateQueries({ queryKey: ["chain", symbol] });
+    queryClient.invalidateQueries({ queryKey: ["session-snapshots", symbol] });
   }, [queryClient, symbol]);
 
   const liveStatus = useLiveMetrics(symbol, liveEnabled, () => {
@@ -81,6 +87,15 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
     () => deriveSessionBounds(metricsQuery.data),
     [metricsQuery.data],
   );
+
+  const defaultSessionDate = useMemo(
+    () =>
+      sessionBounds?.to ? sessionDateFromIso(sessionBounds.to) : undefined,
+    [sessionBounds],
+  );
+
+  const effectiveSessionDate = sessionDateOverride ?? defaultSessionDate;
+  const sessionSnapshotsQuery = useSessionSnapshots(symbol, effectiveSessionDate);
 
   const snapshotTimes = useMemo(
     () => snapshotTimesFromSeries(metricsQuery.data),
@@ -240,6 +255,13 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
     <SectionError message={chainErrorMessage} onRetry={() => chainQuery.refetch()} />
   ) : null;
 
+  const sessionSnapshotsError = sessionSnapshotsQuery.isError
+    ? formatApiError(
+        sessionSnapshotsQuery.error,
+        "Failed to load session snapshots.",
+      )
+    : null;
+
   return (
     <>
       {showToast ? (
@@ -270,6 +292,11 @@ export function InstrumentDashboard({ symbol }: InstrumentDashboardProps) {
               chainSection={chainSection}
               overall={signalsQuery.data.overall}
               signals={signalsQuery.data.signals}
+              sessionSnapshots={sessionSnapshotsQuery.data}
+              sessionSnapshotsLoading={sessionSnapshotsQuery.isLoading}
+              sessionSnapshotsError={sessionSnapshotsError}
+              sessionDate={effectiveSessionDate}
+              onSessionDateChange={setSessionDateOverride}
             />
           ) : null}
           {activeTab === "chain" ? (

@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import metrics
 from core.normalize import Snapshot, StrikeRow
+from core.strike_window import top_oi_strike_numbers
 
 
 def _sum(rows, attr) -> int:
@@ -168,10 +169,16 @@ def compute_metrics(
     pe_cog = metrics.calculate_cog(
         [r.strike for r in rows], [r.pe_oi for r in rows]).get("cog")
 
+    prev_ce_cog: float | None = None
+    prev_pe_cog: float | None = None
     cog_shift = None
     if prev is not None:
+        prev_ce_cog = metrics.calculate_cog(
+            [r.strike for r in prev.rows], [r.ce_oi for r in prev.rows]
+        ).get("cog")
         prev_pe_cog = metrics.calculate_cog(
-            [r.strike for r in prev.rows], [r.pe_oi for r in prev.rows]).get("cog")
+            [r.strike for r in prev.rows], [r.pe_oi for r in prev.rows]
+        ).get("cog")
         if pe_cog is not None and prev_pe_cog is not None:
             cog_shift = round(pe_cog - prev_pe_cog, 2)
 
@@ -190,11 +197,23 @@ def compute_metrics(
 
     sr = _support_resistance(rows, u)
 
+    ce_migration: dict[str, object] = {"direction": "flat"}
+    pe_migration: dict[str, object] = {"direction": "flat"}
+    if prev is not None:
+        ce_migration = metrics.analyze_migration(
+            top_oi_strike_numbers(prev.rows, prev.underlying, side="ce"),
+            top_oi_strike_numbers(rows, u, side="ce"),
+        )
+        pe_migration = metrics.analyze_migration(
+            top_oi_strike_numbers(prev.rows, prev.underlying, side="pe"),
+            top_oi_strike_numbers(rows, u, side="pe"),
+        )
+
     sentiment = metrics.calculate_market_sentiment(
-        ce_cog_data={"current": ce_cog, "previous": None},
-        pe_cog_data={"current": pe_cog, "previous": None},
-        ce_migration={"direction": "flat"},
-        pe_migration={"direction": "flat"},
+        ce_cog_data={"current": ce_cog, "previous": prev_ce_cog},
+        pe_cog_data={"current": pe_cog, "previous": prev_pe_cog},
+        ce_migration=ce_migration,
+        pe_migration=pe_migration,
         pcr_data=pcr_data,
         ce_oi_change=net_ce_oi_change,
         pe_oi_change=net_pe_oi_change,

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     metrics_max_rows: int = 2000
     metrics_max_days: int = 7
-    chain_top_oi_limit: int = 5
+    chain_top_oi_limit: int = 3
 
     ws_poll_seconds: float = 3.0
 

@@ -37,6 +37,14 @@ export function useChain(symbol: string, endAt: string) {
   });
 }
 
+export function useSessionSnapshots(symbol: string, date?: string) {
+  return useQuery({
+    queryKey: ["session-snapshots", symbol, date ?? "today"],
+    queryFn: () => api.getSessionSnapshots(symbol, { date }),
+    refetchInterval: 60_000,
+  });
+}
+
 export function metricsAtTime(
   series: MetricsRow[] | undefined,
   time: string,

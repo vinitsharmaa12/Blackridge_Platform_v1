@@ -82,6 +82,25 @@ npm run dev
 
 Integration gate: `npm run verify` in `apps/web`. See [apps/web/README.md](apps/web/README.md).
 
+## Session snapshots (strategy spec)
+
+Phase cards on the dashboard follow [`_ref/session_snap.py`](_ref/session_snap.py) IST windows:
+
+| Phase | Window |
+|-------|--------|
+| Morning | 09:21 – 09:22 |
+| Midday | 12:30 – 12:45 |
+| Evening | 15:00 – 15:30 |
+
+A phase is **populated** only when at least one metrics tick falls inside its window (last
+tick wins). The morning window is one minute wide — the worker runs a **10s burst** from
+`09:21–09:25` IST (`MORNING_BURST_*` in `.env`) plus a `09:21` anchor cron, matching
+[`_ref/orchestrator.py`](_ref/orchestrator.py).
+
+API: `GET /instruments/{symbol}/session-snapshots?date=YYYYMMDD` returns per-phase
+`status` (`populated` / `pending` / `missed`). If the requested day has no captured phases,
+the API falls back to the latest day with data (`date_fallback: true`).
+
 ## Test
 
 ```bash

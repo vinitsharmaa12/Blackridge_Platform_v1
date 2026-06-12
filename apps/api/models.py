@@ -134,6 +134,42 @@ class SignalsResponse(BaseModel):
     signals: list[SignalCard]
 
 
+class SessionPhaseSnapshot(BaseModel):
+    """Matches _ref/session_snap.py + session_snapshot_renderer field names."""
+
+    status: Literal["populated", "pending", "missed"] = "missed"
+    window_label: str = ""
+    timestamp: str = "N/A"
+    underlying: str = "N/A"
+    top1ce_strike: str = "N/A"
+    top1ce_oi: str = "N/A"
+    top2ce_strike: str = "N/A"
+    top2ce_oi: str = "N/A"
+    top3ce_strike: str = "N/A"
+    top3ce_oi: str = "N/A"
+    top1pe_strike: str = "N/A"
+    top1pe_oi: str = "N/A"
+    top2pe_strike: str = "N/A"
+    top2pe_oi: str = "N/A"
+    top3pe_strike: str = "N/A"
+    top3pe_oi: str = "N/A"
+    pcr: str = "N/A"
+    overall_ce_oi: str = "N/A"
+    overall_pe_oi: str = "N/A"
+    overall_ce_volume: str = "N/A"
+    overall_pe_volume: str = "N/A"
+
+
+class SessionSnapshotsResponse(BaseModel):
+    date: str
+    requested_date: str
+    resolved_date: str
+    date_fallback: bool = False
+    morning: SessionPhaseSnapshot
+    midday: SessionPhaseSnapshot
+    evening: SessionPhaseSnapshot
+
+
 class HealthResponse(BaseModel):
     status: str
     db: str
