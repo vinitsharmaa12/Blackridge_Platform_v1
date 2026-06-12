@@ -15,7 +15,14 @@ export type WatchlistAddRequest = components["schemas"]["WatchlistAddRequest"];
 /** Not in OpenAPI (JSONResponse stub) — matches apps/api/models.py InsightJobResponse. */
 export type InsightJobResponse = {
   job_id: string;
-  status: string;
+  status: "already_generated" | "generating";
+};
+
+/** Matches apps/api/models.py InsightJobStatusResponse. */
+export type InsightJobStatusResponse = {
+  job_id: string;
+  status: "queued" | "running" | "done" | "failed";
+  error: string | null;
 };
 
 export type MetricsQuery = {

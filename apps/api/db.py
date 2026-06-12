@@ -380,6 +380,28 @@ async def resolve_on_demand_job(
     return existing["id"], existing["status"]
 
 
+async def fetch_today_on_demand_job(
+    conn: AsyncConnection,
+    *,
+    instrument_id: int,
+    user_id: UUID,
+    session_date: date,
+) -> dict[str, Any] | None:
+    cur = await conn.execute(
+        """
+        select id, status, error
+        from insight_jobs
+        where instrument_id = %s
+          and user_id = %s
+          and session_date = %s
+          and trigger_type = 'on_demand'
+        limit 1
+        """,
+        (instrument_id, user_id, session_date),
+    )
+    return await cur.fetchone()
+
+
 async def user_has_insight_today(
     conn: AsyncConnection,
     *,

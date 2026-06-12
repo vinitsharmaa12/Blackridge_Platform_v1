@@ -113,7 +113,8 @@ curl -s -X POST http://localhost:8000/dev/token \
 | `GET` | `/instruments/{symbol}/metrics` | yes | Metrics time-series (`from`, `to`, `fields`) |
 | `GET` | `/instruments/{symbol}/chain` | yes | Option chain at `at=latest` or ISO timestamp |
 | `GET` | `/instruments/{symbol}/insights` | yes | Recent insights (`limit`) |
-| `POST` | `/instruments/{symbol}/insights:generate` | yes | Enqueue insight job (202 stub) |
+| `GET` | `/instruments/{symbol}/insights/job` | yes | Today's on-demand job status (`queued`/`running`/`done`/`failed`) |
+| `POST` | `/instruments/{symbol}/insights:generate` | yes | Start async insight generation (202; runs in API process) |
 | `GET` | `/me/watchlist` | yes | Caller's watchlist |
 | `POST` | `/me/watchlist` | yes | Add symbol to watchlist |
 | `DELETE` | `/me/watchlist/{symbol}` | yes | Remove symbol from watchlist |

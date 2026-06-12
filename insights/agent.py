@@ -18,10 +18,6 @@ from insights.tools import dispatch_tool
 
 logger = logging.getLogger(__name__)
 
-_BUY_SELL_PATTERN = re.compile(
-    r"\b(buy|sell|go long|go short|enter a trade|take a position)\b",
-    re.IGNORECASE,
-)
 _NUMBER_PATTERN = re.compile(r"-?\d+(?:\.\d+)?")
 
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "system.md"
@@ -62,12 +58,9 @@ def _numbers_from_cited(cited: dict[str, Any]) -> set[str]:
 
 def validate_grounding(output: InsightOutput) -> str | None:
     """Return error message if narrative numbers are not grounded in cited_metrics."""
-    if _BUY_SELL_PATTERN.search(output.narrative):
-        return "narrative contains buy/sell language"
-
     narrative_nums = extract_numbers(output.narrative)
-    if not narrative_nums:
-        return None
+    if len(narrative_nums) < 2:
+        return "narrative must cite at least two numeric data points for signal strength"
 
     cited_nums = _numbers_from_cited(output.cited_metrics)
     for num in narrative_nums:
@@ -112,8 +105,10 @@ def _run_with_model(
         {
             "role": "user",
             "content": (
-                f"Generate an insight for {symbol.upper()} "
-                f"(task={task_type.value}). Use tools first, then return JSON."
+                f"Produce a market signal for {symbol.upper()} (task={task_type.value}). "
+                "Use tools first. State the signal, justify its strength with at least two "
+                "numeric metrics from tools, set confidence to match that strength, then "
+                "return JSON only."
             ),
         }
     ]

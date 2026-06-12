@@ -28,6 +28,12 @@ SAMPLE_INSIGHT = {
     "user_id": TEST_USER_ID,
 }
 
+SAMPLE_JOB = {
+    "id": JOB_ID,
+    "status": "queued",
+    "error": None,
+}
+
 
 def _mock_user_conn() -> AsyncMock:
     mock = AsyncMock()
@@ -60,7 +66,7 @@ def test_generate_insight_queues_job(
     assert resp.status_code == 202
     body = resp.json()
     assert body["job_id"] == str(JOB_ID)
-    assert body["status"] == "queued"
+    assert body["status"] == "generating"
     mock_create_task.assert_called_once()
 
 
@@ -86,7 +92,7 @@ def test_generate_insight_retries_stuck_queued_job(
         resp = client.post("/instruments/NIFTY/insights:generate", headers=auth_header)
 
     assert resp.status_code == 202
-    assert resp.json() == {"job_id": str(JOB_ID), "status": "queued"}
+    assert resp.json() == {"job_id": str(JOB_ID), "status": "generating"}
     mock_create_task.assert_called_once()
 
 
@@ -107,12 +113,16 @@ def test_generate_insight_retries_failed_job(
         "apps.api.routers.insights.user_has_insight_today",
         new=AsyncMock(return_value=False),
     ), patch(
+        "insights.runner.reset_job_for_retry_by_id",
+        return_value=True,
+    ) as mock_reset, patch(
         "apps.api.routers.insights.asyncio.create_task",
     ) as mock_create_task:
         resp = client.post("/instruments/NIFTY/insights:generate", headers=auth_header)
 
     assert resp.status_code == 202
-    assert resp.json() == {"job_id": str(JOB_ID), "status": "retrying"}
+    assert resp.json() == {"job_id": str(JOB_ID), "status": "generating"}
+    mock_reset.assert_called_once_with(JOB_ID)
     mock_create_task.assert_called_once()
 
 
@@ -159,13 +169,60 @@ def test_generate_insight_retries_done_without_insight(
         "apps.api.routers.insights.user_has_insight_today",
         new=AsyncMock(return_value=False),
     ), patch(
+        "insights.runner.reset_job_for_retry_by_id",
+        return_value=True,
+    ) as mock_reset, patch(
         "apps.api.routers.insights.asyncio.create_task",
     ) as mock_create_task:
         resp = client.post("/instruments/NIFTY/insights:generate", headers=auth_header)
 
     assert resp.status_code == 202
-    assert resp.json() == {"job_id": str(JOB_ID), "status": "retrying"}
+    assert resp.json() == {"job_id": str(JOB_ID), "status": "generating"}
+    mock_reset.assert_called_once_with(JOB_ID)
     mock_create_task.assert_called_once()
+
+
+def test_get_insight_job(
+    client: TestClient,
+    auth_header: dict[str, str],
+) -> None:
+    with patch(
+        "apps.api.routers.insights.user_connection",
+        return_value=_mock_user_conn(),
+    ), patch(
+        "apps.api.routers.insights.fetch_instrument",
+        new=AsyncMock(return_value=INST),
+    ), patch(
+        "apps.api.routers.insights.fetch_today_on_demand_job",
+        new=AsyncMock(return_value=SAMPLE_JOB),
+    ):
+        resp = client.get("/instruments/NIFTY/insights/job", headers=auth_header)
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "job_id": str(JOB_ID),
+        "status": "queued",
+        "error": None,
+    }
+
+
+def test_get_insight_job_not_found(
+    client: TestClient,
+    auth_header: dict[str, str],
+) -> None:
+    with patch(
+        "apps.api.routers.insights.user_connection",
+        return_value=_mock_user_conn(),
+    ), patch(
+        "apps.api.routers.insights.fetch_instrument",
+        new=AsyncMock(return_value=INST),
+    ), patch(
+        "apps.api.routers.insights.fetch_today_on_demand_job",
+        new=AsyncMock(return_value=None),
+    ):
+        resp = client.get("/instruments/NIFTY/insights/job", headers=auth_header)
+
+    assert resp.status_code == 404
 
 
 def test_list_insights(

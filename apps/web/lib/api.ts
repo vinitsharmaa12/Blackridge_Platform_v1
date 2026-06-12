@@ -5,6 +5,7 @@ import type {
   HealthResponse,
   Insight,
   InsightJobResponse,
+  InsightJobStatusResponse,
   InsightsQuery,
   Instrument,
   LatestMetricsResponse,
@@ -204,6 +205,9 @@ export const api = {
 
   generateInsight: (symbol: string): Promise<InsightJobResponse> =>
     apiFetch(`/instruments/${enc(symbol)}/insights:generate`, { method: "POST" }),
+
+  getInsightJob: (symbol: string): Promise<InsightJobStatusResponse> =>
+    apiFetch(`/instruments/${enc(symbol)}/insights/job`),
 
   getWatchlist: (): Promise<WatchlistEntry[]> => apiFetch("/me/watchlist"),
 

@@ -18,10 +18,36 @@ from apps.api.ws import start_ws_background, stop_ws_background
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     await init_pool(settings)
+    _log_insights_env()
     await start_ws_background(settings)
     yield
     await stop_ws_background()
     await close_pool()
+
+
+def _log_insights_env() -> None:
+    """Warn when insight generation env is incomplete (on-demand runs in API process)."""
+    import logging
+    import os
+
+    log = logging.getLogger(__name__)
+    missing = [
+        name
+        for name, value in (
+            ("OPENROUTER_API_KEY", os.getenv("OPENROUTER_API_KEY", "")),
+            ("INSIGHTS_MODEL_CHEAP", os.getenv("INSIGHTS_MODEL_CHEAP", "")),
+            ("INSIGHTS_MODEL_PREMIUM", os.getenv("INSIGHTS_MODEL_PREMIUM", "")),
+        )
+        if not value
+    ]
+    if missing:
+        log.warning(
+            "Insight generation disabled — missing env: %s. "
+            "Set these on the API service for POST …/insights:generate.",
+            ", ".join(missing),
+        )
+    else:
+        log.info("Insight generation env present (OPENROUTER + model tiers)")
 
 
 def create_app() -> FastAPI:

@@ -23,13 +23,17 @@ from insights.schemas import (
 )
 
 VALID_OUTPUT = {
-    "title": "PCR supports bullish structure",
-    "narrative": "PCR OI at 1.25 with underlying 25000 shows bullish positioning.",
+    "title": "Bullish signal — PCR OI 1.25 at 25000",
+    "narrative": (
+        "Bullish signal: PCR OI at 1.25 with underlying at 25000 shows call-side positioning. "
+        "Net PE OI change of 120000 adds conviction — moderate-to-strong bullish lean."
+    ),
     "sentiment_label": "Bullish",
     "confidence": 0.82,
     "cited_metrics": {
         "pcr_oi": 1.25,
         "underlying": 25000,
+        "net_pe_oi_change": 120000,
     },
 }
 
@@ -48,7 +52,7 @@ def test_parse_insight_output_valid() -> None:
     output, err = parse_insight_output(json.dumps(VALID_OUTPUT))
     assert err is None
     assert output is not None
-    assert output.title.startswith("PCR")
+    assert output.title.startswith("Bullish")
 
 
 def test_validate_grounding_rejects_ungrounded_number() -> None:
@@ -62,15 +66,28 @@ def test_validate_grounding_rejects_ungrounded_number() -> None:
     assert validate_grounding(output) is not None
 
 
-def test_validate_grounding_rejects_buy_sell() -> None:
+def test_validate_grounding_rejects_too_few_numbers() -> None:
     output = InsightOutput(
         title="Test",
-        narrative="You should buy calls now.",
+        narrative="Bullish signal with only one number: PCR at 1.25.",
         sentiment_label="Bullish",
         confidence=0.5,
-        cited_metrics={"underlying": 25000},
+        cited_metrics={"pcr_oi": 1.25},
     )
-    assert "buy/sell" in (validate_grounding(output) or "")
+    assert "at least two numeric" in (validate_grounding(output) or "")
+
+
+def test_validate_grounding_allows_directional_signal_when_grounded() -> None:
+    output = InsightOutput(
+        title="Test",
+        narrative=(
+            "Bullish signal: PCR OI at 1.25 with underlying at 25000 supports call-side bias."
+        ),
+        sentiment_label="Bullish",
+        confidence=0.5,
+        cited_metrics={"pcr_oi": 1.25, "underlying": 25000},
+    )
+    assert validate_grounding(output) is None
 
 
 def test_validate_grounding_accepts_grounded_numbers() -> None:

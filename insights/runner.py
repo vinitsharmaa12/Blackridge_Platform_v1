@@ -137,6 +137,33 @@ def write_insight(
     return row[0]
 
 
+def reset_job_for_retry(conn: psycopg.Connection, job_id: UUID) -> bool:
+    """Reset a stale/failed/done job to queued so process_job can run again."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            update insight_jobs
+            set status = 'queued',
+                error = null,
+                started_at = null,
+                completed_at = null
+            where id = %s
+              and status in ('running', 'failed', 'done')
+            returning id
+            """,
+            (job_id,),
+        )
+        return cur.fetchone() is not None
+
+
+def reset_job_for_retry_by_id(job_id: UUID) -> bool:
+    """Service-role wrapper for API retry before background processing."""
+    cfg = get_insights_settings()
+    _ensure_database_url(cfg)
+    with connect() as conn:
+        return reset_job_for_retry(conn, job_id)
+
+
 def _mark_job(
     conn: psycopg.Connection,
     job_id: UUID,

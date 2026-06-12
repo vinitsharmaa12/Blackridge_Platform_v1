@@ -14,11 +14,12 @@ from apps.api.auth import AuthUser, get_current_user
 from apps.api.db import (
     fetch_insights,
     fetch_instrument,
+    fetch_today_on_demand_job,
     resolve_on_demand_job,
     user_connection,
     user_has_insight_today,
 )
-from apps.api.models import Insight, InsightJobResponse
+from apps.api.models import Insight, InsightJobResponse, InsightJobStatusResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/instruments", tags=["insights"])
@@ -29,9 +30,16 @@ def _session_date() -> date:
     return datetime.now(tz=IST).astimezone(IST).date()
 
 
+def _needs_retry(job_status_db: str, has_insight: bool) -> bool:
+    return job_status_db in ("failed", "running") or (
+        job_status_db == "done" and not has_insight
+    )
+
+
 async def _process_job_background(job_id: UUID) -> None:
     from insights.runner import process_job
 
+    logger.info("insight_background_start job_id=%s", job_id)
     try:
         await asyncio.to_thread(process_job, job_id)
     except Exception:  # noqa: BLE001
@@ -50,6 +58,31 @@ async def list_insights(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown symbol")
         rows = await fetch_insights(conn, inst["id"], limit=limit)
     return [Insight.model_validate(r) for r in rows]
+
+
+@router.get("/{symbol}/insights/job", response_model=InsightJobStatusResponse)
+async def get_insight_job(
+    symbol: str,
+    user: AuthUser = Depends(get_current_user),
+) -> InsightJobStatusResponse:
+    session_day = _session_date()
+    async with user_connection(user) as conn:
+        inst = await fetch_instrument(conn, symbol)
+        if inst is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown symbol")
+        job = await fetch_today_on_demand_job(
+            conn,
+            instrument_id=inst["id"],
+            user_id=user.id,
+            session_date=session_day,
+        )
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No insight job for today")
+    return InsightJobStatusResponse(
+        job_id=str(job["id"]),
+        status=job["status"],
+        error=job.get("error"),
+    )
 
 
 @router.post("/{symbol}/insights:generate", status_code=status.HTTP_202_ACCEPTED)
@@ -83,15 +116,13 @@ async def generate_insight(
     if job_status_db in ("queued", "failed", "running") or (
         job_status_db == "done" and not has_insight
     ):
-        if job_status_db in ("failed", "running") or (
-            job_status_db == "done" and not has_insight
-        ):
-            job_status = "retrying"
-        else:
-            job_status = "queued"
+        if _needs_retry(job_status_db, has_insight):
+            from insights.runner import reset_job_for_retry_by_id
+
+            reset_job_for_retry_by_id(job_id)
         asyncio.create_task(_process_job_background(job_id))
-        body = InsightJobResponse(job_id=str(job_id), status=job_status).model_dump()
+        body = InsightJobResponse(job_id=str(job_id), status="generating").model_dump()
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)
 
-    body = InsightJobResponse(job_id=str(job_id), status="processing").model_dump()
+    body = InsightJobResponse(job_id=str(job_id), status="generating").model_dump()
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)

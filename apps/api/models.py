@@ -114,7 +114,13 @@ class WatchlistEntry(BaseModel):
 
 class InsightJobResponse(BaseModel):
     job_id: str
-    status: str = "queued"
+    status: Literal["already_generated", "generating"] = "generating"
+
+
+class InsightJobStatusResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "running", "done", "failed"]
+    error: str | None = None
 
 
 class SignalCard(BaseModel):
