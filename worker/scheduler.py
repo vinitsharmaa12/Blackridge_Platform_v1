@@ -38,6 +38,21 @@ def is_market_open(
     return open_t <= current <= close_t
 
 
+def is_morning_burst_window(
+    now: datetime,
+    *,
+    burst_start: str = "09:21",
+    burst_end: str = "09:25",
+) -> bool:
+    """True on weekdays within the high-frequency morning burst (IST)."""
+    local = now.astimezone(IST)
+    if local.weekday() >= 5:
+        return False
+    start_t = _parse_hhmm(burst_start)
+    end_t = _parse_hhmm(burst_end)
+    return start_t <= local.time() < end_t
+
+
 def _tick(settings: WorkerSettings) -> None:
     now = datetime.now(tz=IST)
     if not is_market_open(
@@ -49,6 +64,23 @@ def _tick(settings: WorkerSettings) -> None:
     logger.info("scheduler_tick instruments=%s", settings.instruments)
     run_all(settings)
     _maybe_session_close(now, settings)
+
+
+def _morning_burst_tick(settings: WorkerSettings) -> None:
+    """10s cadence during morning burst — matches _ref/orchestrator.py open window."""
+    now = datetime.now(tz=IST)
+    if not is_morning_burst_window(
+        now,
+        burst_start=settings.morning_burst_start,
+        burst_end=settings.morning_burst_end,
+    ):
+        return
+    if not is_market_open(
+        now, market_open=settings.market_open, market_close=settings.market_close
+    ):
+        return
+    logger.info("morning_burst_tick instruments=%s", settings.instruments)
+    run_all(settings)
 
 
 def _maybe_session_close(now: datetime, settings: WorkerSettings) -> None:
@@ -79,6 +111,27 @@ def main() -> int:
         seconds=settings.ingest_interval_seconds,
         args=[settings],
         id="ingest",
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.add_job(
+        _morning_burst_tick,
+        "interval",
+        seconds=settings.morning_burst_interval_seconds,
+        args=[settings],
+        id="morning_burst",
+        max_instances=1,
+        coalesce=True,
+    )
+    burst_hour, burst_minute = settings.morning_burst_start.split(":")
+    scheduler.add_job(
+        _tick,
+        "cron",
+        day_of_week="mon-fri",
+        hour=int(burst_hour),
+        minute=int(burst_minute),
+        args=[settings],
+        id="morning_anchor",
         max_instances=1,
         coalesce=True,
     )

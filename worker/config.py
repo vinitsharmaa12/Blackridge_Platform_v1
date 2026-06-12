@@ -20,6 +20,9 @@ class WorkerSettings(BaseSettings):
 
     database_url: str = Field(alias="DATABASE_URL")
     ingest_interval_seconds: int = Field(180, alias="INGEST_INTERVAL_SECONDS")
+    morning_burst_interval_seconds: int = Field(10, alias="MORNING_BURST_INTERVAL_SECONDS")
+    morning_burst_start: str = Field("09:21", alias="MORNING_BURST_START")
+    morning_burst_end: str = Field("09:25", alias="MORNING_BURST_END")
     market_open: str = Field("09:15", alias="MARKET_OPEN")
     market_close: str = Field("15:35", alias="MARKET_CLOSE")
     # Comma-separated in .env (e.g. NIFTY or NIFTY,BANKNIFTY) — not JSON.

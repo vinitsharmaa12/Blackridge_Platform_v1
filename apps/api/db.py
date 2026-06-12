@@ -14,6 +14,7 @@ from psycopg_pool import AsyncConnectionPool
 
 from apps.api.auth import AuthUser
 from apps.api.config import Settings
+from core.strike_window import DEFAULT_TOP_N, top_oi_from_chain_dicts
 
 _pool: AsyncConnectionPool | None = None
 
@@ -178,27 +179,23 @@ async def fetch_top_oi_strikes(
     instrument_id: int,
     snap_time: datetime,
     *,
-    limit: int,
+    limit: int = DEFAULT_TOP_N,
+    underlying: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     cur = await conn.execute(
         """
-        select strike, ce_oi, pe_oi
+        select strike, ce_oi, pe_oi, underlying
         from option_snapshots
         where instrument_id = %s and time = %s
         """,
         (instrument_id, snap_time),
     )
     rows = await cur.fetchall()
-    ce = sorted(
-        [{"strike": float(r["strike"]), "oi": int(r["ce_oi"] or 0)} for r in rows],
-        key=lambda x: x["oi"],
-        reverse=True,
-    )[:limit]
-    pe = sorted(
-        [{"strike": float(r["strike"]), "oi": int(r["pe_oi"] or 0)} for r in rows],
-        key=lambda x: x["oi"],
-        reverse=True,
-    )[:limit]
+    if underlying is None and rows:
+        raw = rows[0].get("underlying")
+        underlying = float(raw) if raw is not None else None
+    ce = top_oi_from_chain_dicts(rows, underlying, side="ce", n=limit)
+    pe = top_oi_from_chain_dicts(rows, underlying, side="pe", n=limit)
     return ce, pe
 
 
@@ -235,6 +232,79 @@ def _resolve_metric_columns(fields: Sequence[str] | None) -> list[str]:
     # time + instrument_id always required for series identity
     chosen = set(fields) | {"time", "instrument_id"}
     return sorted(chosen)
+
+
+_SESSION_METRICS_FIELDS = (
+    "time",
+    "underlying",
+    "total_ce_oi",
+    "total_pe_oi",
+    "total_ce_volume",
+    "total_pe_volume",
+)
+
+
+async def fetch_recent_metric_days(
+    conn: AsyncConnection,
+    instrument_id: int,
+    *,
+    limit: int = 30,
+) -> list[date]:
+    cur = await conn.execute(
+        """
+        select distinct (time::date) as session_day
+        from metrics
+        where instrument_id = %s
+        order by session_day desc
+        limit %s
+        """,
+        (instrument_id, limit),
+    )
+    rows = await cur.fetchall()
+    return [row["session_day"] for row in rows]
+
+
+async def fetch_day_metrics(
+    conn: AsyncConnection,
+    instrument_id: int,
+    *,
+    day_start: datetime,
+    day_end: datetime,
+) -> list[dict[str, Any]]:
+    cols = ", ".join(_SESSION_METRICS_FIELDS)
+    cur = await conn.execute(
+        f"""
+        select {cols}
+        from metrics
+        where instrument_id = %s and time >= %s and time < %s
+        order by time asc
+        """,
+        (instrument_id, day_start, day_end),
+    )
+    return list(await cur.fetchall())
+
+
+async def fetch_chain_for_times(
+    conn: AsyncConnection,
+    instrument_id: int,
+    times: Sequence[datetime],
+) -> dict[datetime, list[dict[str, Any]]]:
+    if not times:
+        return {}
+    cur = await conn.execute(
+        """
+        select time, strike, underlying, ce_oi, pe_oi
+        from option_snapshots
+        where instrument_id = %s and time = any(%s)
+        order by time asc, strike asc
+        """,
+        (instrument_id, list(times)),
+    )
+    rows = await cur.fetchall()
+    grouped: dict[datetime, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(row["time"], []).append(row)
+    return grouped
 
 
 async def fetch_chain_at(

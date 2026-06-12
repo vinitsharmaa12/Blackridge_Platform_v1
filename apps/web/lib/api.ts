@@ -10,6 +10,8 @@ import type {
   LatestMetricsResponse,
   MetricsQuery,
   MetricsRow,
+  SessionSnapshotsQuery,
+  SessionSnapshotsResponse,
   SignalsQuery,
   SignalsResponse,
   WatchlistEntry,
@@ -153,6 +155,16 @@ export const api = {
 
   getLatest: (symbol: string): Promise<LatestMetricsResponse> =>
     apiFetch(`/instruments/${enc(symbol)}/latest`),
+
+  getSessionSnapshots: (
+    symbol: string,
+    query: SessionSnapshotsQuery = {},
+  ): Promise<SessionSnapshotsResponse> =>
+    apiFetch(
+      `/instruments/${enc(symbol)}/session-snapshots${buildQuery({
+        date: query.date,
+      })}`,
+    ),
 
   getSignals: (
     symbol: string,
